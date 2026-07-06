@@ -1,6 +1,8 @@
 # 요금가드 워처 (Codex flavor)
 
-opt-in goal 요금가드의 **Codex 절반**. `--with-guard`로 설치되면 이 폴더(`_shared/guard/`)에 들어온다.
+opt-in goal 요금가드의 **Codex 절반**. 이 폴더를 대상 시스템의 `_shared/guard/`로 복사해 쓴다
+(v3.0.0부터 init.py 자동 설치 경로 없음 — claude flavor Stop 훅은 loadout 카탈로그가 설치,
+codex 워처는 이 수동 복사가 설치 경로).
 가드 *정책*은 전부 `coach`(usage-coach)가 단일 정본으로 판정하고, 워처는 그 결정을 *집행*만 한다.
 
 ## 왜 워처인가 (Claude와 셋업이 다른 이유)

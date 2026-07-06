@@ -5,6 +5,18 @@
 (정본: `generator/templates/{claude,codex}/CHANGELOG.md`)를 참조한다.
 형식은 [Keep a Changelog](https://keepachangelog.com/), 버전은 [Semantic Versioning](https://semver.org/lang/ko/)을 따른다.
 
+## [3.0.0] - 2026-07-06
+
+### Removed (BREAKING)
+- **`--with-knot` / `--with-guard` 옵트인 제거** — knot·요금가드의 *설치*는
+  [loadout](https://github.com/netwaif/loadout) 카탈로그("CLAUDE.md 구성 골라 담아줘")
+  담당으로 이관. configure-multiagent 절차의 knot·가드 질문/후속 안내 단계도 제거.
+  - **존치**: `knot` 능동 스킬(플러그인 스킬, save/ingest/query/lint) ·
+    `knot_block.md`/`knot-vault/` 스캐폴드 · `guard/`(codex 워처 + Stop 훅 정본) ·
+    validate C10·C12(사후 검증 — loadout 설치물에도 유효).
+  - codex 가드 워처 설치는 `generator/guard/README.md`의 수동 복사(loadout codex점 전까지).
+  - **기존 설치자 영향 없음** — 기본 생성물 무변경, 이미 주입된 관리블록·훅은 그대로 동작.
+
 ## [2.2.2] - 2026-07-04
 
 ### Fixed
