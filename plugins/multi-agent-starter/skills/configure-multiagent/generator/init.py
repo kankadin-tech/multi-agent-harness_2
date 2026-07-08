@@ -28,7 +28,7 @@ PRESERVE_DIRS = ("tasks", "_local")
 # flavor별 지침파일(에이전트가 자동 로드) — validate.py FLAVOR['instruction']과 일치해야.
 INSTRUCTION_FILE = {"claude": "CLAUDE.md", "codex": "AGENTS.md", "antigravity": "AGENTS.md"}
 # knot·요금가드 설치는 v3.0.0부터 loadout 카탈로그 담당(github.com/netwaif/loadout).
-# 자산(knot_block.md·knot-vault/·guard/·skills/knot/)과 validate C10·C12(사후 검증)는 존치.
+# 자산(knot_block.md·knot-vault/·guard/)과 validate C10·C12(사후 검증)는 존치. knot 능동 스킬은 v3.1.0부터 netwaif/knot 자체 플러그인이 배포.
 
 
 def available_flavors() -> list[str]:

@@ -45,8 +45,8 @@ LOG_TAGS = "DECISION | WORKER_CALL | VERIFICATION | ERROR | APPROVAL | COMPLETE"
 # knot 자동층(v3.0.0부터 loadout 카탈로그가 주입). 미설치(마커 부재)는 정상 PASS.
 KNOT_BLOCK = SCRIPT_DIR / "knot_block.md"
 KNOT_START, KNOT_END = "<!-- knot:start -->", "<!-- knot:end -->"
-# knot 능동 스킬은 플러그인 최상위 skills/knot/ 로 배포(호스트 네이티브 로드) — 생성물에 복사하지
-# 않으므로 워크스페이스 검증 대상 아님. C10(관리블록 정본)만 사후 검사한다.
+# knot 능동 스킬은 v3.1.0부터 knot 자체 플러그인(github.com/netwaif/knot)이 배포 — 이 저장소·생성물
+# 검증 대상 아님. C10(관리블록 정본)만 사후 검사한다.
 
 
 # goal 요금가드 배선(v3.0.0부터 loadout 카탈로그가 주입). 미설치(산출물 부재)는 정상 PASS.

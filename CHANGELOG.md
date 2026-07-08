@@ -5,6 +5,15 @@
 (정본: `generator/templates/{claude,codex}/CHANGELOG.md`)를 참조한다.
 형식은 [Keep a Changelog](https://keepachangelog.com/), 버전은 [Semantic Versioning](https://semver.org/lang/ko/)을 따른다.
 
+## [3.1.0] - 2026-07-08
+
+### Removed
+- **`skills/knot/` 능동 스킬 제거** — knot 능동 스킬(save/ingest/query/lint)은
+  [netwaif/knot](https://github.com/netwaif/knot) 자체 플러그인(1.0.0)이 배포한다
+  (마켓플레이스에 `netwaif/knot` 추가). v3.0.0 knot 이관의 마무리 — 스킬 정본·배포처 단일화.
+  - **존치**: `knot_block.md` 정본 · `knot-vault/` 스캐폴드 · validate C10(관리블록 사후 검증).
+  - v2.x 기존 설치자는 영향 없음. 플러그인 업데이트 시에만 스킬이 빠지며, knot 마켓 추가로 대체.
+
 ## [3.0.0] - 2026-07-06
 
 ### Removed (BREAKING)
