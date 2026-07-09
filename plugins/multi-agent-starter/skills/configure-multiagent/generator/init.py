@@ -28,7 +28,8 @@ PRESERVE_DIRS = ("tasks", "_local")
 # flavor별 지침파일(에이전트가 자동 로드) — validate.py FLAVOR['instruction']과 일치해야.
 INSTRUCTION_FILE = {"claude": "CLAUDE.md", "codex": "AGENTS.md", "antigravity": "AGENTS.md"}
 # knot·요금가드 설치는 v3.0.0부터 loadout 카탈로그 담당(github.com/netwaif/loadout).
-# 자산(knot_block.md·knot-vault/·guard/)과 validate C10·C12(사후 검증)는 존치. knot 능동 스킬은 v3.1.0부터 netwaif/knot 자체 플러그인이 배포.
+# knot 자산(knot_block.md·knot-vault/)과 validate C10(사후 검증)은 존치. knot 능동 스킬은 v3.1.0부터 netwaif/knot 자체 플러그인이 배포.
+# 요금가드는 v3.2.0부터 자산(구 guard/)·사후검증(구 C12)까지 전부 loadout guard 품목 소관 — 이 저장소에 가드 파일 없음.
 
 
 def available_flavors() -> list[str]:

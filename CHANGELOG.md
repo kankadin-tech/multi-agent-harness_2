@@ -5,6 +5,17 @@
 (정본: `generator/templates/{claude,codex}/CHANGELOG.md`)를 참조한다.
 형식은 [Keep a Changelog](https://keepachangelog.com/), 버전은 [Semantic Versioning](https://semver.org/lang/ko/)을 따른다.
 
+## [3.2.0] - 2026-07-10
+
+### Removed
+- **`generator/guard/` 가드 자산 제거** — v3.0.0에 예정했던 이관의 완료.
+  [loadout](https://github.com/netwaif/loadout) 0.4.0이 codex점을 열면서(`--flavor codex`)
+  codex 워처(`codex_goal_watch.mjs`)·README 정본이 loadout guard 품목(`files.codex/`)으로
+  이관됐다(claude Stop 훅 정본은 이미 loadout `hook.json`). 가드 설치·검증은 전부 loadout 소관:
+  설치=`store.py --pick guard [--flavor codex]`, 검증=`store.py --doctor`(정본 대조).
+- **validate C12(요금가드 배선 사후검증) 제거** — 대조할 정본이 loadout으로 갔으므로
+  검증 소관도 loadout doctor로 이관. tests의 가드 기본부재 단언은 유지.
+
 ## [3.1.0] - 2026-07-08
 
 ### Removed
