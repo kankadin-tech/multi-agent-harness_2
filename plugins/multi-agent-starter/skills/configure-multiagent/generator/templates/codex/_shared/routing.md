@@ -1,20 +1,32 @@
 # Worker Routing Rules
 
+## 2층 라우팅 — 안정층/가변층
+
+이 파일의 decision tree는 **작업 유형 → 능력 슬롯**을 정한다(안정층 — 모델 세대가 바뀌어도 유효).
+**슬롯 → 담당 배정**의 정본은 `_shared/capability-profile.md`(가변층)다.
+신모델 출시·판정 변경 시 **프로필만 갱신**한다 — 이 파일의 슬롯 정의는 손대지 않는다.
+아래 트리의 담당명은 현 프로필 배정의 병기(편의 사본)다 — 프로필과 어긋나면 **프로필이 이긴다**.
+
 ## Decision Tree
 
 ```
-작업 성격 파악
+작업 성격 파악 → 능력 슬롯 → 담당 (배정 정본: capability-profile.md)
 │
-├── 현재 Codex Orchestrator가 직접 처리 가능한 단일 작업?
-│   └── worker 호출 없이 진행
+├── [engineer·computer-use] 현재 Codex Orchestrator가 직접 처리 가능한
+│   구현 · 테스트 · 로컬 검증 · 브라우저 조작 단일 작업?
+│   └── worker 호출 없이 진행 (두 슬롯의 기본 담당 = Orchestrator 자신)
 │
-├── 구현 / 코드 분석 / 테스트 / diff / 로컬 검증 / 이미지 생성이 크고 분리 가능?
+├── [engineer] 구현 / 코드 분석 / 테스트 / diff / 로컬 검증 / 이미지 생성이 크고 분리 가능?
 │   └── codex-main
 │
-├── Codex 또는 codex-main 산출물의 독립 리뷰 / 비판적 검증?
+├── [strategist] 설계 · UI/UX 디자인 · 전략 · 문체가 중요한 산출물?
+│   └── Orchestrator가 생성 → 완성 후 claude-critic 품질 게이트 권장
+│      (critic은 리뷰 대상 산출물이 먼저 있어야 함 — 최초 생성에 직접 라우팅 금지)
+│
+├── [reviewer] 산출물의 독립 리뷰 / 비판적 검증?
 │   └── claude-critic
 │
-├── 이미지 · 스크린샷 분석 / 50페이지+ 문서 / 제3자 시각의 검토?
+├── [multimodal] 이미지 · 스크린샷 분석 / 50페이지+ 문서 / 제3자 시각의 검토?
 │   └── gemini
 │
 └── 판단 어려움?
@@ -51,7 +63,8 @@
 
 ### codex-main
 
-- **용도**: 보조 구현, 코드베이스 분석, 리팩토링, 테스트 작성, diff 생성, 로컬 CLI 검증, 이미지 생성.
+- **슬롯**: engineer (크고 분리 가능한 작업 — 기본 담당은 Orchestrator 자신)
+- **용도**: 크고 분리 가능한 구현, 코드베이스 분석, 리팩토링, 테스트 작성, diff 생성, 로컬 CLI 검증, 이미지 생성.
 - **결과물**: 코드, diff, 테스트 결과, CLI 출력, 이미지 파일.
 - **호출 방식**: 현재 Codex 환경에서 제공되는 sub-agent/worker 기능을 사용한다. 외부 `codex` CLI나 별도 Codex bridge를 직접 실행해야 한다면 먼저 사용자 승인을 받는다.
 - **brief 필수 필드**:
@@ -67,6 +80,7 @@ write_scope: none | tasks-only | "src/**, tests/**"
 
 ### claude-critic
 
+- **슬롯**: reviewer (+ strategist 품질 게이트 — 산출은 Orchestrator, 판단만 게이트)
 - **용도**: Codex Orchestrator 또는 `codex-main` 산출물의 독립 리뷰·비평. 실현 가능성, 테스트 커버리지, 사이드 이펙트, 누락 요구사항을 adversarial하게 점검한다.
 - **선행 조건**: 리뷰 대상 산출물 경로가 존재해야 한다. 대상은 `codex-main result.md`, Orchestrator 작성 문서, 기존 코드·문서·소스 등 brief에 명시된 파일일 수 있다.
 - **결과물**: 중요도별 비평 리스트, 수정 제안, 수락/보류 판단 근거.
@@ -76,6 +90,7 @@ write_scope: none | tasks-only | "src/**, tests/**"
 
 ### gemini
 
+- **슬롯**: multimodal
 - **용도**: 이미지/스크린샷/다이어그램 분석, 50페이지 이상 문서 스캔, 제3자 시각의 검토.
 - **결과물**: 분석 텍스트, 요약, 검토 의견.
 - **호출 방식**: `_shared/backends.json`의 `gemini`가 정본 — 백엔드 = Antigravity `agy` CLI, 디스패처 `bash _shared/adapters/call_worker.sh gemini <brief-file>`(결과 JSON envelope). 기본 `gemini-3.1-pro-high`, 빠른 경로 `gemini-3-flash`/`pro-low`, 폴백 `api`. 옛 `mcp__gemini-pro__*` 프록시 브리지 폐기.

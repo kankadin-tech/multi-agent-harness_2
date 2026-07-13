@@ -33,13 +33,14 @@ FLAVOR = {
     },
     "antigravity": {
         "instruction": "AGENTS.md",            # agy가 자동 로드(spike S1 확인)
-        "main_worker": "claude-main",          # 메인 코더(교차 벤더)
+        "main_worker": "claude-main",          # strategist 워커(교차 벤더) — routing에 있어야
         "forbidden_worker": "gemini-critic",   # gemini 오케스트레이터 자기검수 금지
         "extra_files": [],
     },
 }
 
 TOPOLOGY = ("Pipeline", "Fan-out/Fan-in", "Expert Pool", "Producer-Reviewer")
+SLOTS = ("strategist", "engineer", "computer-use", "reviewer", "multimodal")
 LOG_TAGS = "DECISION | WORKER_CALL | VERIFICATION | ERROR | APPROVAL | COMPLETE"
 
 # knot 자동층(v3.0.0부터 loadout 카탈로그가 주입). 미설치(마커 부재)는 정상 PASS.
@@ -89,7 +90,8 @@ def run_checks(target: Path, flavor: str) -> list[tuple[bool, str]]:
     # C1 필수 파일 존재
     required = [
         instr, ".gitignore", "tasks/.gitkeep",
-        "_shared/routing.md", "_shared/orchestrator-rules.md",
+        "_shared/routing.md", "_shared/capability-profile.md",
+        "_shared/orchestrator-rules.md",
         "_shared/design-basis.md", "_shared/system-invariants.md",
         "_templates/log.md", "_templates/context.md", "_templates/worker-brief.md",
     ] + cfg["extra_files"]
@@ -116,6 +118,22 @@ def run_checks(target: Path, flavor: str) -> list[tuple[bool, str]]:
     # C5 토폴로지 4패턴
     miss_topo = [t for t in TOPOLOGY if t not in routing]
     check(not miss_topo, f"C5 토폴로지 4패턴 (없음: {miss_topo or '-'})")
+
+    # C5b 2층 라우팅 — routing(안정층) 트리가 각 슬롯을 분기 태그([slot], [a·b] 허용)로 갖고,
+    # capability-profile(가변층)의 「현재 배정」 표가 슬롯당 정확히 1행. substring 우연 일치로는
+    # PASS 못 하게 구조 검사. (담당명 대응까지는 비교하지 않음 — 배정 서술은 자유 산문이라
+    # 기계 대조가 과제약. 병기 동기화는 프로필 갱신 절차가 소관)
+    profile = read(target, "_shared/capability-profile.md") or ""
+    tree_tokens: set[str] = set()
+    for m in re.finditer(r"\[([^\]\n]+)\]", routing):
+        tree_tokens.update(t.strip() for t in m.group(1).split("·"))
+    miss_tree = [s for s in SLOTS if s not in tree_tokens]
+    row_counts = {s: len(re.findall(rf"^\|\s*{re.escape(s)}\s*\|", profile, re.M)) for s in SLOTS}
+    bad_rows = [f"{s}×{n}" for s, n in row_counts.items() if n != 1]
+    link_ok = "capability-profile" in routing
+    check(link_ok and not miss_tree and not bad_rows,
+          f"C5b 2층 라우팅 (routing→profile 참조: {'OK' if link_ok else '없음'}, "
+          f"트리 슬롯 태그 누락: {miss_tree or '-'}, 프로필 배정행 이상: {bad_rows or '-'})")
 
     # C6 gemini 정책. claude/codex: gemini 워커가 cli/agy + pro-high. antigravity: 오케스트레이터가
     # agy(Gemini Pro High)이므로 별도 gemini 워커 없음 — 지침이 agy/pro-high 오케스트레이터를 명시하는지.

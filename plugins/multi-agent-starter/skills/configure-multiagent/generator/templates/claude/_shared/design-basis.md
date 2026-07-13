@@ -47,6 +47,8 @@
 
 - **D8 카파시 4원칙 층별 적용** = 오케스트레이터 지침(CLAUDE.md "운영 원칙 (Operating Principles)" 섹션) 풀버전 verbatim 차용(도입 tradeoff·말미 성공지표 포함) / 워커층 유일 정본은 `_templates/worker-brief.md`의 "Worker 행동 규약" 고정 블록 — ②단순함·③외과수술식 그대로 + ①추측전질문은 **번역형**(워커는 one-shot/headless라 사용자 질문 채널 없음 → 가정 명시·불확실/불일치를 result.md Issues/Caveats에 표면화) / ④목표기반 loop은 오케스트레이터 전용(Verification Checklist 루프와 결합). 워커 brief·agent 정의에 "사용자에게 질문" 지시 금지, agent 정의에 규약 중복 금지(brief가 모든 워커에 닿는 유일 운반체 — call_worker.sh가 brief를 통째로 전달). 기존 D와 무충돌·동방향 보강(②=최소 worker set·토큰경제, ③=write_scope 4조건, ④=never-trust-upstream 검증, D6 구조 불변). 출처: multica-ai/andrej-karpathy-skills — MIT는 README·plugin.json 선언 기준이며 상류에 LICENSE 파일 없음(2026-06-10 확인), 재배포 표기는 `NOTICE` 정본. (2026-06-10, tasks/karpathy-wiki-upgrade/)
 
+- **D9 라우팅 2층 분리** = `routing.md`(안정층: 작업 유형→능력 슬롯 strategist·engineer·computer-use·reviewer·multimodal)와 `_shared/capability-profile.md`(가변층: 슬롯→담당 배정, 근거·날짜 필수, 이력 append-only). 트리의 담당명 병기는 편의 사본 — 프로필이 정본. 근거: 모델별 강점 우열은 신모델 출시마다 바뀌는 *환경 소유 사실*(D7 동방향)이라 시스템 파일에 구우면 세대마다 개정 부채가 된다. 초기 배정 근거 = 2026-07-13 외부 리뷰 10건 종합 판정(Anthropic vs OpenAI 최신 플래그십): 설계·UI/UX 디자인·전략·글쓰기 = Claude 우위, 대규모 구현·테스트·브라우저 조작·비용·속도·토큰 효율 = GPT 우위로 수렴 — computer-use 슬롯 신설 동근거. 갱신은 판정 자료 확보 시 프로필만(절차는 프로필 파일이 정본). 검증: validate C1(프로필 존재)+C5b(routing→profile 참조, 슬롯 5종). (2026-07-13)
+
 ## 4. 불변식
 
 구체 항목·검증 명령은 `_shared/system-invariants.md`. 시스템 수정 후 그 자가점검을 돌린다.

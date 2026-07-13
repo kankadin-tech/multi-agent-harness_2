@@ -5,6 +5,23 @@
 (정본: `generator/templates/{claude,codex}/CHANGELOG.md`)를 참조한다.
 형식은 [Keep a Changelog](https://keepachangelog.com/), 버전은 [Semantic Versioning](https://semver.org/lang/ko/)을 따른다.
 
+## [3.3.0] - 2026-07-13
+
+### Added
+- **라우팅 2층 분리 (3 flavor 전부)** — `_shared/capability-profile.md` 신설(가변층:
+  능력 슬롯→담당 배정, 근거·날짜 필수·이력 append-only). routing.md는 안정층(작업 유형→
+  능력 슬롯 strategist·engineer·computer-use·reviewer·multimodal)으로 재편 — 신모델 출시·
+  판정 변경 시 프로필만 갱신하고 시스템 파일은 불변. 초기 배정 근거 = 2026-07-13 외부 리뷰
+  10건 종합 판정(설계·디자인·전략·글쓰기 = Claude 우위 / 대규모 구현·테스트·브라우저 조작·
+  비용·속도 = GPT 우위). 각 flavor design-basis에 결정 기록(claude D9, codex D8, antigravity D8).
+- **computer-use 슬롯 신설** — 브라우저 조작·도구 워크플로우 자동화의 독립 라우팅 분기.
+- **validate C5b** — 2층 라우팅 불변식(routing→profile 참조 + 프로필 슬롯 5종), C1에
+  `_shared/capability-profile.md` 추가.
+
+### Fixed
+- **`.codex-plugin/plugin.json` 버전 방치(3.1.0) 교정** — 3.2.0 릴리스 시 범프 누락으로
+  repo-check R2(version 일관)가 FAIL이던 기존 결함 해소. 3종 매니페스트 3.3.0 일괄.
+
 ## [3.2.0] - 2026-07-10
 
 ### Removed

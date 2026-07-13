@@ -6,9 +6,11 @@ Codex를 오케스트레이터로 두고 Codex·Claude·Gemini를 필요할 때 
 
 - **Orchestrator = Codex 세션** (이 폴더 안에서 실행 시 `AGENTS.md` 적용)
 - **Workers** = 별도 worker/model 호출. 모두 승인 게이트 통과 필요.
-  - `codex-main` — 구현·코드 분석·테스트·로컬 검증·이미지 생성
-  - `claude-critic` — Codex 산출물 리뷰·비평
-  - `gemini` — 이미지·긴 문서·제3자 시각의 검토
+  - `codex-main` — [engineer] 크고 분리 가능한 구현·코드 분석·테스트·로컬 검증·이미지 생성
+  - `claude-critic` — [reviewer · strategist 품질 게이트] Codex 산출물 리뷰·비평 (strategist 산출은 Orchestrator, critic은 판단만)
+  - `gemini` — [multimodal] 이미지·긴 문서·제3자 시각의 검토
+
+  슬롯→담당 배정의 정본은 `_shared/capability-profile.md`(가변층) — 신모델 출시 시 프로필만 갱신. engineer·computer-use 슬롯의 기본 담당은 Orchestrator 자신.
 - **Memory = filesystem.** 런타임 상태 없음. 모든 결정·승인·검증이 파일로 남는다.
 
 ## 폴더 구조

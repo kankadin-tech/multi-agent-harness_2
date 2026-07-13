@@ -6,10 +6,12 @@ Claude Code를 오케스트레이터로 두고 Claude·Codex·Gemini를 워커�
 
 - **Orchestrator = Claude Code 세션** (이 폴더 안에서 실행 시 `CLAUDE.md` 자동 적용)
 - **Workers** = 외부 모델 호출. 모두 승인 게이트 통과 필요.
-  - `claude-main` — 메인 코딩·디버깅·설계·아키텍처·전략
-  - `codex-main` — 보조 구현·코드 분석·테스트·로컬 검증·이미지 생성
-  - `codex-critic` — `claude-main` 산출물 리뷰·비평 (Codex의 주된 역할)
-  - `gemini` — 이미지·긴 문서·제3자 시각의 검토
+  - `claude-main` — [strategist] 기획·설계·아키텍처·전략·디자인 방향·문체 글쓰기
+  - `codex-main` — [engineer·computer-use] 대규모 구현·테스트·로컬 검증·브라우저 자동화·이미지 생성
+  - `codex-critic` — [reviewer] 산출물 리뷰·비평 (Codex의 주된 역할)
+  - `gemini` — [multimodal] 이미지·긴 문서·제3자 시각의 검토
+
+  슬롯→워커 배정의 정본은 `_shared/capability-profile.md`(가변층) — 신모델 출시 시 프로필만 갱신.
 - **Memory = filesystem.** 런타임 상태 없음. 모든 결정·승인·검증이 파일로 남는다.
 
 ## 폴더 구조

@@ -13,10 +13,12 @@
 ```
 Orchestrator (Codex session, internal reasoning)
 └── Worker Pool (separate worker/model calls — approval required)
-    ├── codex-main      bounded implementation · analysis · tests · local verification · image generation
-    ├── claude-critic   Codex output review · adversarial critique
-    └── gemini          multimodal · long document · third-party perspective
+    ├── codex-main      [engineer] large, separable implementation · analysis · tests · local verification · image generation
+    ├── claude-critic   [reviewer · strategist quality gate] Codex output review · adversarial critique
+    └── gemini          [multimodal] multimodal · long document · third-party perspective
 ```
+
+Slot→assignee mapping is owned by `_shared/capability-profile.md` (variable layer — update only the profile when a new model generation shifts the verdict). The engineer and computer-use slots default to the Orchestrator itself.
 
 **Important**: Codex Orchestrator's internal reasoning is not a worker. A separate `codex-main`, `claude-critic`, or `gemini` call is a worker/model call and must pass the approval gate for the task.
 

@@ -13,10 +13,12 @@
 ```
 Orchestrator (Antigravity session — agy/IDE, Gemini 3.1 Pro High — internal reasoning)
 └── Worker Pool (separate worker/model calls — approval required)
-    ├── claude-main     main coding · debugging · design · architecture · strategy
-    ├── codex-main      bounded implementation · analysis · tests · local verification
-    └── codex-critic    output review · adversarial critique (independent of the Gemini orchestrator)
+    ├── claude-main     [strategist] planning · design · architecture · strategy · design direction · debugging root-cause
+    ├── codex-main      [engineer·computer-use] large implementation · analysis · tests · local verification · browser automation
+    └── codex-critic    [reviewer] output review · adversarial critique (independent of the Gemini orchestrator)
 ```
+
+Slot→assignee mapping is owned by `_shared/capability-profile.md` (variable layer — update only the profile when a new model generation shifts the verdict).
 
 멀티모달(이미지/스크린샷)·긴 문서는 **오케스트레이터(Gemini 3.1 Pro High)가 직접** 처리한다 — 같은 벤더의 `gemini` 워커는 두지 않는다(독립성 이득 없음).
 

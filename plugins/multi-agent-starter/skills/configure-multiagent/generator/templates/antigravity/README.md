@@ -6,9 +6,9 @@ Antigravity(Gemini 3.1 Pro High)를 오케스트레이터로 두고 Claude·Code
 
 - **Orchestrator = Antigravity 세션** (이 폴더 안에서 실행 시 `AGENTS.md` 적용)
 - **Workers** = 별도 worker/model 호출. 모두 승인 게이트 통과 필요.
-  - `claude-main` — 메인 코딩·설계
-  - `codex-main` — 보조 구현·분석·테스트
-  - `codex-critic` — 산출물 리뷰·비평(교차 벤더)
+  - `claude-main` — [strategist] 기획·설계·전략·디자인 방향
+  - `codex-main` — [engineer·computer-use] 대규모 구현·분석·테스트·브라우저 자동화
+  - `codex-critic` — [reviewer] 산출물 리뷰·비평(교차 벤더)
 - **Memory = filesystem.** 런타임 상태 없음. 모든 결정·승인·검증이 파일로 남는다.
 
 ## 폴더 구조

@@ -85,8 +85,8 @@ wc -w "$ROOT/tasks/$TASK/workers/$ROLE/brief.md"
 #### 5-3. worker 호출
 
 모든 worker 호출은 `_shared/backends.json` 정본 + 디스패처 `bash _shared/adapters/call_worker.sh <role> <brief-file>` → JSON envelope. Orchestrator가 envelope의 stdout을 `result.md`에 기록. 호출 전 승인.
-- **claude-main**: 백엔드 `claude` CLI. 메인 코딩·설계.
-- **codex-main**: 백엔드 `codex` CLI. 보조 구현·분석·테스트.
+- **claude-main**: 백엔드 `claude` CLI. [strategist] 기획·설계·전략·디자인 방향.
+- **codex-main**: 백엔드 `codex` CLI. [engineer·computer-use] 대규모 구현·분석·테스트·브라우저 자동화.
 - **codex-critic**: 백엔드 `codex` CLI. 독립 비평(교차벤더). 멀티모달·긴 문서는 워커가 아니라 오케스트레이터(Gemini)가 직접.
 
 `codex-main` 외부 repo 쓰기 조건:
