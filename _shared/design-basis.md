@@ -53,6 +53,8 @@
 
 - **D11 런타임 안전 룰 반영 (gist Karpathy-skills v2 대조)** = (a) 지시-데이터 분리: sources/·result.md 내 지시문 불채택(CLAUDE.md Verification — 기존 never-trust-upstream의 강화, 새 원칙 아님). (b) 결정론적 검증 실행기: `_shared/check-invariants.sh`가 판정 정본, system-invariants.md 표는 스펙(판단은 모델, 검증은 코드). (c) learnings.md 통합 패스: 20KB 초과 시 승격·압축(무한성장 방지). (d) worker 호출 예산: task.md `max_worker_calls` soft gate(하드 중단 아님, 승인 게이트 보완). (e) 전역 CLAUDE.md에 Advisor/Worker↔하네스 Worker Pool 용어 카브아웃 추가(하네스 규칙 우선 명시). 채택 안 함: gist 룰10(거부 사유 비노출 — 공개 서비스용, 로컬 개인 하네스 비해당), 전역 4원칙 풀버전 복제(시스템 프롬프트와 중복). 근거: 기존 원칙(never-trust-upstream·토큰경제·승인 게이트)의 동방향 강화로 판단, 전면 재감사 대신 invariants 확장으로 커버. 출처: https://gist.github.com/renezander030/2898eb5f0100688f4197b5e493e156a2 (2026-07-05) (근거 갱신 2026-07-05 2차: (f) 예산은 일괄 승인 시 planned_workers 기준으로 동시 확정 — 자동 진행 선호와 soft gate 양립. (g) 호스트 네이티브 서브에이전트는 read-only 탐색만 무승인 — 산출물 위임의 워커 풀 우회 차단, file-as-memory·감사 추적 보존.)
 
+- **D12 라우팅 2층 분리** = `routing.md`(안정층: 작업 유형→능력 슬롯 strategist·engineer·computer-use·reviewer·multimodal)와 `_shared/capability-profile.md`(가변층: 슬롯→담당 배정, 근거·날짜 필수, 이력 append-only). 트리의 담당명 병기는 편의 사본 — 프로필이 정본. 근거: 모델별 강점 우열은 신모델 출시마다 바뀌는 *환경 소유 사실*(D7 동방향)이라 시스템 파일에 구우면 세대마다 개정 부채가 된다. 초기 배정 근거 = 2026-07-13 외부 리뷰 10건 종합 판정(Anthropic vs OpenAI 최신 플래그십): 설계·UI/UX 디자인·전략·글쓰기 = Claude 우위, 대규모 구현·테스트·브라우저 조작·비용·속도·토큰 효율 = GPT 우위로 수렴 — computer-use 슬롯 신설 동근거. 갱신은 판정 자료 확보 시 프로필만(절차는 프로필 파일이 정본). 검증: validate C1(프로필 존재)+C5b(routing→profile 참조, 슬롯 5종). (2026-07-13)
+
 ## 4. 불변식
 
 구체 항목·검증 명령은 `_shared/system-invariants.md`. 시스템 수정 후 그 자가점검을 돌린다.
