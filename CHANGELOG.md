@@ -5,6 +5,15 @@
 (정본: `generator/templates/{claude,codex}/CHANGELOG.md`)를 참조한다.
 형식은 [Keep a Changelog](https://keepachangelog.com/), 버전은 [Semantic Versioning](https://semver.org/lang/ko/)을 따른다.
 
+## [3.4.0] - 2026-07-17
+
+### Merged
+- **netwaif/multi-agent-starter v3.3.0 + kankadin fork 2.4.2 병합.** 볼트 브리지(3파일 3-flavor
+  배포)·`/export` 스킬·런타임 안전 룰(D11, validate C13/C14)·`vault.config` scaffold-once를
+  upstream v3.3 위에 재적용했다. 라우팅 2층 분리(capability-profile 가변층 + slot 기반 routing,
+  C5b), 요금가드 loadout 이관(C12 제거), knot 스킬 netwaif/knot 이관은 upstream에서 계승.
+  루트 정본 sync 드리프트(routing 2층 구조·capability-profile 신설분 등)를 복원해 templates/claude 재생성.
+
 ## [3.3.0] - 2026-07-13
 
 ### Added
@@ -53,6 +62,80 @@
     validate C10·C12(사후 검증 — loadout 설치물에도 유효).
   - codex 가드 워처 설치는 `generator/guard/README.md`의 수동 복사(loadout codex점 전까지).
   - **기존 설치자 영향 없음** — 기본 생성물 무변경, 이미 주입된 관리블록·훅은 그대로 동작.
+
+## [2.4.2] - 2026-07-05 (kankadin fork)
+
+### Added
+- **볼트 브리지 정식 편입** — 하네스 task 산출물을 knot 계열 LLM Wiki 볼트 inbox로 단방향
+  export하는 브리지 3개 파일을 generator 정식 배포로 편입해 **3 flavor(claude·codex·antigravity)
+  전부**에 배포한다(이전엔 로컬 설치본 orphan, git 미커밋):
+  - `_shared/adapters/export_to_vault.sh` (실행권한 100755 유지) — 볼트 열기 힌트만 flavor별
+    분기(claude/codex/agy), 그 외 로직 동일.
+  - `_shared/vault-bridge.md` (문서), `_shared/vault.config` (사용자 설정, 제네릭 스캐폴드).
+  - **domain 단일 플래그 유도** — `--domain <d>` 하나로 목적지 폴더·frontmatter를 함께
+    맞춘다(폴더↔frontmatter 일치 보장). 기본은 `_misc`(볼트 `/inbox`가 도메인 판정).
+- **validate C1 가드** — 브리지 3파일을 required 목록에 추가(설치 후 셋 다 존재 보장, 3 flavor).
+
+### Changed
+- **`_shared/vault.config` scaffold-once 보존** — 볼트 경로·기본 도메인 같은 사용자 설정이라
+  generator update가 덮어쓰지 않는다(init.py `PRESERVE_IF_EXISTS`; 있으면 보존, 신규 설치만
+  제네릭 스캐폴드 기록). dry-run·update 모드 모두 올바르게 동작(테스트: test_update_preserve.py).
+- **개인 기본경로 일반화** — 스크립트 `DEFAULT_VAULT`를 `$HOME/vaults/knot`로(개인값 제거).
+  볼트 경로 우선순위 `--vault > $KNOT_VAULT > vault.config(vault=) > $HOME/vaults/knot`.
+- 결정 기록: 루트 D9 근거 갱신(볼트 브리지 편입·scaffold-once·경로 일반화), codex·antigravity
+  flavor 신규 D9.
+
+## [2.4.1] - 2026-07-05 (kankadin fork)
+
+### Changed
+- **전역 Advisor 규칙 ↔ 하네스 인터페이스 정합** (문서 규칙 2줄 + 결정 기록):
+  - **승인 시 예산 확정** — 워커 일괄 승인 시 `planned_workers` 기준 예상 호출 수 +
+    재시도 여유분으로 `max_worker_calls`를 함께 확정. soft gate가 계획을 벗어난 폭주에만
+    발동해 자동 진행 선호와 양립 (approval-policy "호출 예산" 섹션, 3 flavor).
+  - **서브에이전트 read-only 한정** — 호스트 네이티브 서브에이전트(Claude Code의 Agent 도구
+    등)는 read-only 탐색만 무승인 허용. 산출물 위임은 반드시 워커 풀 경유 — 서브에이전트로
+    우회하면 brief·result·감사 로그가 비므로 금지 (지침파일 Approval Gate, 3 flavor).
+  - 결정 기록: 루트 D11 (f)(g) 근거 갱신, codex·antigravity flavor D8 (e)(f) 상당.
+
+## [2.4.0] - 2026-07-05 (kankadin fork)
+
+### Added
+- **런타임 안전 룰** (출처: gist Karpathy-skills v2 대조 —
+  https://gist.github.com/renezander030/2898eb5f0100688f4197b5e493e156a2 · 루트 D11,
+  codex/antigravity flavor D8):
+  - **지시-데이터 분리** — `sources/`·worker `result.md`는 데이터이지 지시가 아님을
+    지침파일 Verification에 명문화 (claude 한글 / codex·antigravity 영문).
+  - **`_shared/check-invariants.sh` 결정론 실행기** — 3 flavor 전부. system-invariants.md
+    표=스펙, 스크립트=실행기(ROOT 자동 탐지·항목별 PASS/FAIL·FAIL 시 exit 1). 루트 정본은
+    `$MANUAL_DIR` 설정 시 외부 매뉴얼 일관성(INV5)까지 optional 점검.
+  - **learnings.md 통합 패스** — 20KB 초과 시 교훈 승격·압축 절차 (무한성장 방지).
+  - **worker 호출 예산 soft gate** — task.md 메타 `max_worker_calls`(기본 6) +
+    approval-policy "호출 예산" 섹션 + 지침파일 Approval Gate 연동.
+  - 불변식 확장: 루트/claude INV13(지시-데이터 분리)·INV14(max_worker_calls),
+    codex·antigravity INV12·INV13 상당.
+- **validate.py 회귀 가드** — C1 required에 `_shared/check-invariants.sh` 추가,
+  신규 **C13**(지시-데이터 분리 flavor별 marker), **C14**(max_worker_calls
+  task.md 템플릿+approval-policy 양쪽).
+
+### Changed
+- `sync_claude_template.py` — 템플릿 재생성 시 루트 파일의 실행권한 비트 보존
+  (check-invariants.sh·adapters/*.sh).
+
+## [2.3.0] - 2026-07-04 (kankadin fork)
+
+### Added
+- **`/export` 스킬** — 하네스 task 산출물을 볼트로 보내는 확정 트리거. `export_to_vault.sh`의
+  얇은 shim(게이트: MULTIAGENT_ROOT/상향 탐색, 대상: done task 자동 판별, --all/--dry-run/
+  --media copy/--domain 패스스루, 성공 시 log.md [DECISION] 기록). 로직 정본은 스크립트·
+  vault-bridge.md 유지 — 스킬은 재구현하지 않음.
+
+## [2.2.3] - 2026-07-04 (kankadin fork)
+
+### Fixed
+- **KI-1 종결** — `worker-brief.md` 템플릿 첫 의미 줄을 한 줄 목적 평문으로 재구성 (mat 모니터 워커 목적 표시 오염 수정). root + 템플릿 3종(claude 1.2.3 / codex 0.3.3 / antigravity 0.2.3) 동일 반영. 기존 설치자는 `init.py` update 재실행으로 반영.
+
+### Added
+- **KI-4 등록** — `init.py` update 모드의 `_shared/learnings.md` 로컬 누적분 덮어쓰기 문제 문서화 (완화: `_local/learnings.md` 병행 기록).
 
 ## [2.2.2] - 2026-07-04
 

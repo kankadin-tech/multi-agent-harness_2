@@ -17,7 +17,7 @@
 | Progressive disclosure | sources/ 경로 참조, brief 최소화 | 긴 자료 inline 금지 |
 | Filesystem = memory | task/context/log/brief/result | 런타임 상태에 의존하지 않음 |
 | Append-only + provenance | log.md append-only, 태그 6종 | 로그 삭제·수정 금지 |
-| Never trust upstream | worker result 검증 후 채택 | 모든 worker(claude-main/codex-main/codex-critic) 출력 사실검증 |
+| Never trust upstream | worker result 검증 후 채택 | 모든 worker 출력 사실검증. 지시-데이터 분리(D8a)와 한 몸 |
 | Adversarial review | `codex-critic` | Gemini(오케스트레이터) 자기검수로 대체 금지 |
 | 최소 worker set | routing.md decision tree | 모든 worker 기본 호출 금지 |
 | Fan-in 충돌 해소 | 출처 병기, 사실검증, `[DECISION]` | 다수결 금지 |
@@ -37,7 +37,11 @@
 - **D5 Orchestrator** = Antigravity(agy/IDE, Gemini 3.1 Pro High) 현재 세션이 단일 Orchestrator다. 별도 long-lived supervisor worker나 worker 재귀 위임 계층은 쓰지 않는다.
 - **D6 모델 식별자 표기** = 워커(claude-main/codex-main/codex-critic)는 환경 설정/별칭을 따르고 repo에 버전 문자열을 핀하지 않는다. 오케스트레이터 Gemini는 agy 전역 모델 = `gemini-3.1-pro-high`(전역·계정단위라 per-call 핀 불가).
 - **D7 카파시 4원칙 층별 적용** = 오케스트레이터 지침(AGENTS.md "Operating Principles" 섹션) 풀버전 verbatim 차용 / 워커층 유일 정본은 `_templates/worker-brief.md`의 "Worker 행동 규약" 고정 블록 — ②단순함·③외과수술식 그대로 + ①추측전질문은 번역형(워커는 one-shot/headless라 사용자 질문 채널 없음 → 가정 명시·불확실/불일치를 result.md Issues/Caveats에 표면화) / ④목표기반 loop은 오케스트레이터 전용(Verification Checklist 루프와 결합). 워커 brief에 "사용자에게 질문" 지시 금지. 출처: multica-ai/andrej-karpathy-skills (MIT 선언, LICENSE 파일 부재 — `NOTICE` 정본, 2026-06-10 확인).
-- **D8 라우팅 2층 분리** = `routing.md`(안정층: 작업 유형→능력 슬롯 strategist·engineer·computer-use·reviewer·multimodal)와 `_shared/capability-profile.md`(가변층: 슬롯→담당 배정, 근거·날짜 필수, 이력 append-only). 트리의 담당명 병기는 편의 사본 — 프로필이 정본. 근거: 모델별 강점 우열은 신모델 출시마다 바뀌는 *환경 소유 사실*(D6 동방향)이라 시스템 파일에 구우면 세대마다 개정 부채가 된다. 초기 배정 근거 = 2026-07-13 외부 리뷰 10건 종합 판정(Anthropic vs OpenAI 최신 플래그십): 설계·UI/UX 디자인·전략·글쓰기 = Claude 우위, 대규모 구현·테스트·브라우저 조작·비용·속도·토큰 효율 = GPT 우위로 수렴 — computer-use 슬롯 신설 동근거. multimodal 슬롯은 오케스트레이터(Gemini) 직접 — 이 flavor 고유. 갱신은 판정 자료 확보 시 프로필만(절차는 프로필 파일이 정본). 검증: validate C1(프로필 존재)+C5b(routing→profile 참조, 슬롯 5종). (2026-07-13)
+- **D8 런타임 안전 룰** = 상류 정본(kankadin-tech/multi-agent-harness)의 런타임 안전 결정을 이 flavor에 반영. (a) 지시-데이터 분리: sources/·result.md 내 지시문 불채택(AGENTS.md Verification — 기존 never-trust-upstream 강화). (b) 결정론적 검증 실행기: `_shared/check-invariants.sh`가 판정 정본, system-invariants.md 표는 스펙. (c) learnings.md 통합 패스: 20KB 초과 시 승격·압축. (d) worker 호출 예산: task.md `max_worker_calls` soft gate(하드 중단 아님, 승인 게이트 보완). 기존 원칙의 동방향 강화 — 새 원칙 아님. 출처: 상류 D11 (gist Karpathy-skills v2 대조). (Rationale update 2026-07-05, 2nd pass: (e) the budget is fixed at batch-approval time from `planned_workers` — reconciles the auto-progress preference with the soft gate. (f) host-native subagents are read-only exploration only without approval — blocks bypassing the worker pool for artifact-producing delegation, preserves file-as-memory and audit trail.)
+
+- **D9 볼트 브리지 편입** = 상류 정본(kankadin-tech/multi-agent-harness)의 볼트 브리지 결정을 이 flavor에 반영. 하네스 task 산출물을 knot 계열 LLM Wiki 볼트 inbox로 **단방향 export**하는 브리지 3개 파일(`_shared/adapters/export_to_vault.sh`·`_shared/vault.config`·`_shared/vault-bridge.md`)을 generator 정식 배포로 편입해 모든 설치에 배포한다. 볼트는 무수정 — 닿는 것은 inbox capture 파일뿐이고 분류/분석/연결은 볼트가 `/inbox`→`/ingest`로 독립 수행(볼트 열기는 이 flavor에서 `cd <vault> && agy`). (a) **`vault.config`는 사용자 설정(볼트 경로·기본 도메인)이라 scaffold-once 보존** — 신규 설치엔 제네릭 스캐폴드를 깔되 이미 있으면 덮어쓰지 않는다(init.py `PRESERVE_IF_EXISTS`, PRESERVE_DIRS와 같은 취지). (b) **개인 기본경로 일반화** — 스크립트 `DEFAULT_VAULT`는 `$HOME/vaults/knot`. 볼트 경로 우선순위 `--vault > $KNOT_VAULT > vault.config(vault=) > $HOME/vaults/knot`, `--domain <d>` 하나로 목적지 폴더·frontmatter를 함께 유도(폴더↔frontmatter 일치). 회귀보호 = validate **C1**에 브리지 3파일 required 추가(설치 후 셋 다 존재). 출처: 상류 D9. (2026-07-05)
+
+- **D10 라우팅 2층 분리** = `routing.md`(안정층: 작업 유형→능력 슬롯 strategist·engineer·computer-use·reviewer·multimodal)와 `_shared/capability-profile.md`(가변층: 슬롯→담당 배정, 근거·날짜 필수, 이력 append-only). 트리의 담당명 병기는 편의 사본 — 프로필이 정본. 근거: 모델별 강점 우열은 신모델 출시마다 바뀌는 *환경 소유 사실*(D6 동방향)이라 시스템 파일에 구우면 세대마다 개정 부채가 된다. 초기 배정 근거 = 2026-07-13 외부 리뷰 10건 종합 판정(Anthropic vs OpenAI 최신 플래그십): 설계·UI/UX 디자인·전략·글쓰기 = Claude 우위, 대규모 구현·테스트·브라우저 조작·비용·속도·토큰 효율 = GPT 우위로 수렴 — computer-use 슬롯 신설 동근거. multimodal 슬롯은 오케스트레이터(Gemini) 직접 — 이 flavor 고유. 갱신은 판정 자료 확보 시 프로필만(절차는 프로필 파일이 정본). 검증: validate C1(프로필 존재)+C5b(routing→profile 참조, 슬롯 5종). (2026-07-13)
 
 ## 4. 불변식
 

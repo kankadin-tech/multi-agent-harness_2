@@ -2,6 +2,9 @@
 
 <!-- HARD LIMIT: 1200자 한글 / 240단어 영문 (wc -m / wc -w). 파일 내용 inline 금지. 경로만 전달. -->
 <!-- worker가 추론할 수 있는 것은 쓰지 말 것. -->
+<!-- 아래 첫 평문 1줄 = 이 brief의 한 줄 목적. mat 모니터가 이 줄을 워커 목적으로 표시(KI-1 fix). 반드시 실제 목적으로 교체할 것 — placeholder 방치 금지. -->
+
+[한 줄 목적 — 이 worker가 이 작업에서 완료해야 하는 것]
 
 ## Worker 행동 규약 (고정 — 모든 brief에 그대로 유지, 삭제 금지)
 
@@ -28,6 +31,8 @@ write_scope: none             # none | tasks-only | "src/**, tests/**" 등 패�
 task:    tasks/<task-name>/task.md
 context: tasks/<task-name>/context.md
 sources: tasks/<task-name>/sources/<file>
+# gemini 이미지/PDF 검수: 분석 대상의 절대경로를 본문에 직접 적는다(아래 예).
+# image: /absolute/path/to/thumb.png   ← agy가 본문 경로를 열어 본다. --add-dir 쓰지 말 것.
 ```
 
 ## Constraints

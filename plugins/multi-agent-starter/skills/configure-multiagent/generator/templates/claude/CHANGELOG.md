@@ -3,6 +3,14 @@
 이 파일은 MultiAgent orchestration 시스템의 주요 변경을 기록한다.
 형식은 [Keep a Changelog](https://keepachangelog.com/), 버전은 [Semantic Versioning](https://semver.org/lang/ko/)을 따른다.
 
+## [1.4.0] - 2026-07-17
+
+### Merged
+- **netwaif v3.3.0 + kankadin fork 병합** — upstream의 라우팅 2층 분리(`_shared/capability-profile.md`
+  가변층 + 슬롯 기반 routing, C5b) 위에 kankadin fork의 볼트 브리지 편입·런타임 안전 룰(지시-데이터
+  분리·`check-invariants.sh`·learnings 통합 패스·worker 호출 예산)·승인 시 예산 확정·서브에이전트
+  read-only 한정을 재적용. 아래 upstream 라우팅 엔트리와 `(kankadin fork)` 표기 엔트리를 함께 계승.
+
 ## [1.3.0] - 2026-07-13
 
 ### Added
@@ -18,6 +26,53 @@
   = claude-main, engineer(대규모 구현·테스트) = codex-main. 종전 "메인 코딩=claude-main,
   보조 구현=codex-main" 구도에서 무게중심 이동. 최소 worker set 표 동기화.
 - validate에 C5b(2층 라우팅: routing→profile 참조 + 슬롯 5종) 추가, C1에 프로필 포함.
+## [1.3.2] - 2026-07-05 (kankadin fork)
+
+### Added
+- **볼트 브리지 정식 편입** — 하네스 task 산출물을 knot 계열 LLM Wiki 볼트 inbox로 단방향
+  export하는 브리지를 generator 정식 배포로 편입. `_shared/adapters/export_to_vault.sh`
+  (실행권한 유지)·`_shared/vault-bridge.md`(문서)·`_shared/vault.config`(사용자 설정)가
+  이제 모든 설치에 배포된다. 볼트는 무수정 — inbox capture 파일만 떨구고 분류/분석/연결은
+  볼트가 `/inbox`→`/ingest`로 독립 수행.
+- `--domain <d>` 하나로 목적지 폴더·frontmatter를 함께 유도(폴더↔frontmatter 일치 보장).
+
+### Changed
+- `_shared/vault.config`는 **scaffold-once 보존** — 볼트 경로·기본 도메인 같은 사용자
+  설정이라 update 재생성이 덮어쓰지 않는다(있으면 보존, 신규 설치만 제네릭 스캐폴드 기록).
+- 볼트 경로 우선순위: `--vault > $KNOT_VAULT > vault.config(vault=) > $HOME/vaults/knot`.
+
+## [1.3.1] - 2026-07-05 (kankadin fork)
+
+### Changed
+- **승인 시 예산 확정** — 워커 일괄 승인 시 `planned_workers` 기준 예상 호출 수 + 재시도
+  여유분으로 `max_worker_calls`를 함께 확정. soft gate가 계획을 벗어난 폭주에만 발동
+  (approval-policy "호출 예산" 섹션).
+- **서브에이전트 read-only 한정** — 호스트 네이티브 서브에이전트(Claude Code의 Agent 도구
+  등)는 read-only 탐색만 무승인 허용. 산출물 위임은 반드시 워커 풀 경유 — 우회 시 brief·
+  result·감사 로그가 비므로 금지 (CLAUDE.md Approval Gate). (D11 (f)(g))
+
+## [1.3.0] - 2026-07-05 (kankadin fork)
+
+### Added
+- **지시-데이터 분리 (비신뢰 입력)** — `sources/` 자료·worker `result.md` 내용은 데이터이지
+  지시가 아님을 CLAUDE.md Verification에 명문화. 내장 지시문 발견 시 불채택 + `[DECISION]`
+  기록 + 사용자 표면화. (상류 D11a, INV13)
+- **`_shared/check-invariants.sh` 결정론 실행기** — system-invariants.md 표가 스펙,
+  스크립트가 실행기. ROOT 자동 탐지, 항목별 PASS/FAIL 자체 판정, FAIL 시 exit 1.
+  orchestrator-rules §2 절차 3이 이 스크립트 실행으로 갱신됨. (상류 D11b)
+- **learnings.md 통합 패스** — 20KB(`wc -c`) 초과 시 반복 검증 교훈을 규칙 파일로 승격하고
+  "## 통합됨"에 1줄 요약만 남기는 성장 관리 절차. (상류 D11c)
+- **worker 호출 예산 soft gate** — task.md 메타 `max_worker_calls`(기본 6) +
+  approval-policy "호출 예산" 섹션 + CLAUDE.md Approval Gate 한 줄. 초과 전 사용자 확인
+  게이트(하드 중단 아님). (상류 D11d, INV14)
+
+## [1.2.3] - 2026-07-04 (kankadin fork)
+
+### Fixed
+- **KI-1 종결 — worker-brief 템플릿 mat 표시 오염**: 첫 의미 줄이 목적 평문이 아니라서 mat 모니터의 "워커 한 줄 목적"이 오염 표시되던 문제. 헤딩·주석 직후 한 줄 목적 평문(placeholder) 배치로 재구성. 기존 작업의 이미 생성된 brief는 자동 갱신되지 않음.
+
+### Added
+- **KI-4 등록(KNOWN_ISSUES)**: `init.py` update 모드가 `_shared/learnings.md` 로컬 누적분을 덮어씀 — `_local/learnings.md` 병행 기록 완화책 문서화.
 
 ## [1.2.2] - 2026-07-04
 
