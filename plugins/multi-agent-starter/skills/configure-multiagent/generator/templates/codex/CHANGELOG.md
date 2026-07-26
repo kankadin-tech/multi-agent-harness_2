@@ -2,6 +2,19 @@
 
 이 파일은 multi-agent-starter (Codex flavor) orchestration 시스템의 주요 변경을 기록한다.
 
+## [0.6.0] - 2026-07-26
+
+### Fixed
+- **gemini 워커 모델을 `gemini-3.6-flash-high`로 갱신** (기존 `gemini-3.1-pro-high` — 2세대 뒤처짐).
+  최신 세대 3.6에는 flash 티어만 있어(3.6-pro 없음) 세대·티어가 엇갈릴 때 최신 세대를 우선했다.
+- **gemini 모델을 호출별로 핀** — `--model <id>` 플래그를 `backends.json`에 명시. 과거 "agy 모델은
+  전역·계정 단위라 per-call 핀 불가"라던 기술이 현재는 무효다.
+
+### Added
+- **api 폴백(`_shared/adapters/gemini_api.sh`) 실제 동작** — 기존에는 항상 실패하는 슬롯 스텁이었다.
+  Gemini REST 호출로 구현. `GEMINI_API_KEY` 설정 시 활성화되며 `agy` 인증과 독립된 경로다.
+- **폴백 체인에 모델 강등 단계 추가** — `flash-high` → `flash-low`(폴백A) → `api`(폴백B).
+
 ## [0.5.0] - 2026-07-17
 
 ### Merged

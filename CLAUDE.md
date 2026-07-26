@@ -15,6 +15,20 @@ Orchestrator (Claude Code session, internal reasoning)
 
 **중요**: Orchestrator의 내부 추론은 worker가 아님. claude-main worker 호출은 별도 모델 호출이므로 승인·쿼터 대상.
 
+### 모델 지정 ≠ 실제 실행 모델 (claude-main)
+
+`claude-main`의 모델은 `.claude/agents/claude-main.md` frontmatter로 지정하지만, **지정값이 실제 실행 모델을 보장하지 않는다.** 어긋나는 경로가 둘 있다.
+
+1. **별칭 지연** — `opus` 같은 별칭이 최신 세대를 가리키지 않을 수 있다(실측 반례는 `_shared/routing.md` 모델 정책 참조).
+2. **allowlist 미스** — 전체 모델 ID를 핀했는데 그 환경의 availableModels allowlist에 없으면, **경고 없이 부모 모델을 상속**한다.
+
+`result.md`에는 실제 실행 모델이 기록되지 않으므로 로그만으로는 구분되지 않는다.
+
+- **모델을 확정해야 하는 작업**(재현성 요구 산출물, 모델 비교·벤치마크)이면 `claude --model <지정값> -p hi --output-format json`의 `modelUsage` 키로 실측하고 결과를 `log.md`에 `[DECISION]`으로 기록한다. 실측이 유일한 진실원천이다.
+- **일반 작업**이면 지정값을 신뢰하고 진행한다. 매 호출을 검증하는 것은 과설계다.
+- 최상위 티어 모델을 핀한 경우, 그 모델의 광범위한 안전장치가 일상 작업을 오탐 플래그해 하위 모델로 자동 폴백시킬 수 있다(차단 아님, 산출물 품질 손해 없음). 폴백은 수용하고 재호출로 `max_worker_calls`를 소모하지 않는다.
+- `codex-main`·`codex-critic`·`gemini`는 별개 폴백 체인을 가진다 — `_shared/backends.json`의 `fallbacks` 참조.
+
 ## 운영 원칙 (Operating Principles)
 
 Behavioral guidelines to reduce common LLM coding mistakes. Merge with project-specific instructions as needed.

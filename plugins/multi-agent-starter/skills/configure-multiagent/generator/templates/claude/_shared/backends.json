@@ -43,12 +43,12 @@
       "timeout": 300
     },
     "gemini": {
-      "model": "gemini-3.1-pro-high",
+      "model": "gemini-3.6-flash-high",
       "call_type": "cli",
       "brief_mode": "content",
       "cli": {
         "command": "agy",
-        "args_template": ["--prompt", "@brief_content"],
+        "args_template": ["--model", "gemini-3.6-flash-high", "--prompt", "@brief_content"],
         "non_interactive": { "stdin": "/dev/null", "no_tty": true, "on_permission_prompt": "fail" }
       },
       "cwd_policy": "isolated_tmp",
@@ -58,7 +58,17 @@
       "timeout": 300,
       "fallbacks": [
         {
-          "model": "gemini-3.1-pro-high", "call_type": "api", "timeout": 300,
+          "model": "gemini-3.6-flash-low", "call_type": "cli", "brief_mode": "content", "timeout": 300,
+          "approval_class": "worker", "result_capture": "envelope",
+          "cwd_policy": "isolated_tmp", "write_policy": "none",
+          "cli": {
+            "command": "agy",
+            "args_template": ["--model", "gemini-3.6-flash-low", "--prompt", "@brief_content"],
+            "non_interactive": { "stdin": "/dev/null", "no_tty": true, "on_permission_prompt": "fail" }
+          }
+        },
+        {
+          "model": "gemini-api-flash-latest", "call_type": "api", "timeout": 300,
           "approval_class": "worker", "result_capture": "envelope",
           "api": { "ref": "adapters/gemini_api.sh", "required_env": ["GEMINI_API_KEY"],
                    "brief_pass": "arg1", "retry": { "max": 2, "backoff_s": 2 } }

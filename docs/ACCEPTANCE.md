@@ -45,11 +45,15 @@
 
 | flavor | 오케스트레이터 | 필요한 워커 백엔드 |
 |--------|----------------|--------------------|
-| claude | Claude Code 세션 | `codex` MCP(`mcp__codex`), `agy`(PATH, 모델=gemini-3.1-pro-high), (선택) `GEMINI_API_KEY` |
-| codex | Codex 세션 | `claude` CLI(PATH), `agy`(PATH, pro-high) |
+| claude | Claude Code 세션 | `codex` MCP(`mcp__codex`), `agy`(PATH), (선택) `GEMINI_API_KEY` |
+| codex | Codex 세션 | `claude` CLI(PATH), `agy`(PATH) |
 | antigravity | `agy`/Antigravity IDE (Gemini 3.1 Pro High) | `claude` CLI, `codex` CLI (PATH) |
 
-> 모델 정책: `agy`는 모델이 전역/계정 단위(`/model`). 검증 전 **pro-high로 설정** 확인.
+> 모델 정책: gemini 워커의 모델은 `backends.json`이 **호출별로 `--model`로 핀**하므로 `agy` 전역 설정에
+> 의존하지 않는다(과거 "전역/계정 단위라 per-call 불가" 기술은 무효 — 2026-07-26 교정). 검증 전
+> `agy models`로 핀이 여전히 가용·최신인지 확인할 것. `agy`는 모델 별칭을 제공하지 않아 자동 추적이
+> 불가하므로 핀 + 주기 점검이 유일한 방법이다.
+> (선택) `GEMINI_API_KEY`를 설정하면 `agy` 인증과 **독립된** api 폴백(폴백B)이 활성화된다.
 
 ### A1. 설치 (세 경로 중 택1) + 즉시 검증
 - [ ] **generator**: `python3 plugins/multi-agent-starter/skills/configure-multiagent/generator/init.py --flavor <X> --target <DIR> --yes` → 설치 후 validate 자동 실행
