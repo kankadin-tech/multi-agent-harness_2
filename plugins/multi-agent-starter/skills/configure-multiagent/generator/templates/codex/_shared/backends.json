@@ -11,12 +11,12 @@
       "result_capture": "orchestrator"
     },
     "claude-critic": {
-      "model": "host-default",
+      "model": "claude-fable-5",
       "call_type": "cli",
       "brief_mode": "content",
       "cli": {
         "command": "claude",
-        "args_template": ["--prompt", "@brief_content"],
+        "args_template": ["--model", "claude-fable-5", "-p", "@brief_content"],
         "non_interactive": { "stdin": "/dev/null", "no_tty": true, "on_permission_prompt": "fail" }
       },
       "cwd_policy": "isolated_tmp",

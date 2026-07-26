@@ -199,7 +199,66 @@ def run_checks(target: Path, flavor: str) -> list[tuple[bool, str]]:
     check(("max_worker_calls" in task_tpl) and ("max_worker_calls" in policy),
           "C14 max_worker_calls (task.md 템플릿 + approval-policy 양쪽)")
 
+    # C15 claude 워커가 최상위 모델로 **명시 핀**됐는지 (별칭·host-default 금지).
+    # 별칭은 조용히 뒤처지고(`opus` → 구세대로 해석된 실측 사례), host-default는 CLI 기본값에
+    # 맡기는 것이라 최상위 보장이 안 된다. 모델 버전은 하드코딩하지 않는다 — 형태만 본다.
+    c15_ok, c15_why = _claude_pin_ok(target, read(target, "_shared/backends.json"))
+    check(c15_ok, f"C15 claude 워커 최상위 모델 명시 핀 {('— ' + c15_why) if not c15_ok else '(OK)'}")
+
     return results
+
+
+_ALIAS_ONLY = {"opus", "sonnet", "haiku", "fable", "opusplan", "default", "host-default", "inherit"}
+
+
+def _claude_pin_ok(target: Path, raw: str | None) -> tuple[bool, str]:
+    """C15: claude 계열 워커의 모델이 전체 ID 명시 핀인지 검사(버전 무관).
+
+    두 경로를 본다 — native 워커는 `.claude/agents/<role>.md` frontmatter가 정본이고,
+    cli 워커는 backends.json의 `model` + `--model` 인자가 정본이다. 별칭(`opus` 등)이나
+    `host-default`는 최상위 모델을 보장하지 않으므로 FAIL.
+    """
+    if raw is None:
+        return False, "backends.json 없음"
+    try:
+        workers = (json.loads(raw).get("workers") or {})
+    except Exception as e:  # noqa: BLE001
+        return False, f"파싱 실패: {e}"
+
+    found = False
+    for role, w in workers.items():
+        if not isinstance(w, dict):
+            continue
+        cli = w.get("cli") or {}
+        native = w.get("native") or {}
+        is_claude_cli = cli.get("command") == "claude"
+        is_claude_native = bool(native) and "claude" in role
+        if not (is_claude_cli or is_claude_native):
+            continue
+        found = True
+        if is_claude_native:
+            pin = native.get("model_alias")
+            fm = read(target, f".claude/agents/{native.get('subagent_type', role)}.md") or ""
+            m = re.search(r"(?m)^model:\s*(\S+)\s*$", fm)
+            fm_pin = m.group(1) if m else None
+            if fm_pin is None:
+                return False, f"{role}: agent 정의에 model 필드 없음"
+            if fm_pin in _ALIAS_ONLY:
+                return False, f"{role}: agent 정의 model이 별칭({fm_pin}) — 전체 ID 핀 필요"
+            if pin != fm_pin:
+                return False, f"{role}: backends model_alias({pin}) != agent 정의({fm_pin})"
+        else:
+            pin = w.get("model")
+            if pin in _ALIAS_ONLY or not isinstance(pin, str):
+                return False, f"{role}: model이 별칭/기본값({pin}) — 전체 ID 핀 필요"
+            args = cli.get("args_template") or []
+            if "--model" not in args:
+                return False, f"{role}: cli args_template에 --model 핀 없음"
+            if args[args.index("--model") + 1 :][:1] != [pin]:
+                return False, f"{role}: --model 인자가 선언된 model({pin})과 불일치"
+    if not found:
+        return False, "claude 계열 워커를 찾지 못함"
+    return True, ""
 
 
 _CALL_TYPES = {"native", "mcp", "cli", "api"}

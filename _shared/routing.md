@@ -71,10 +71,10 @@ decision tree로 "누구를" 고른 뒤, "어떻게 엮을지" 고른다. **단�
 - **호출 명령**: Claude Code 내장 **Task tool (sub-agent)**
   - `subagent_type`: `claude-main` (`.claude/agents/claude-main.md`에 정의)
   - `prompt`: brief.md 내용 그대로 전달
-  - `model`: agent 정의 파일 frontmatter의 `model: opus`가 자동 적용 (별칭 — **별칭이 최신 세대를 가리키지 않을 수 있다.** 모델 정책 참조)
+  - `model`: agent 정의 파일 frontmatter의 `model: claude-fable-5`가 자동 적용 (명시 핀 — 최상위 모델. 별칭은 뒤처질 수 있어 쓰지 않는다. 모델 정책 참조)
   - `description`: 짧은 작업명 (3~5 단어)
 - **권한**: 메인 Claude Code 세션의 권한 모드 상속. `--dangerously-skip-permissions` (yolo) 모드면 sub-agent도 yolo로 작동. 단 MultiAgent 시스템 게이트(`workers_approved`, 외부 쓰기 4조건)는 별개로 유지된다
-- **비용**: 있음 (Opus(`opus` 별칭) sub-agent 호출. 별도 모델 호출이며 비용·쿼터 대상) → 승인 필요
+- **비용**: 있음 (최상위 모델 sub-agent 호출이라 단가가 가장 높다. 별도 모델 호출이며 비용·쿼터 대상) → 승인 필요
 - **파일 쓰기**: ❌ 직접 X. Task tool이 반환한 텍스트를 Orchestrator가 받아 `result.md`에 기록
 - ※ Orchestrator의 내부 추론과 다름.
 
@@ -129,14 +129,17 @@ decision tree로 "누구를" 고른 뒤, "어떻게 엮을지" 고른다. **단�
 
 ## 모델 정책
 
-각 worker가 실제 어떤 모델로 도는지 정리. 사용자가 매번 명시할 필요는 없으며, 아래 기본이 자동 적용된다.
+**원칙 — 모든 워커는 그 시점의 최상위 모델을 쓴다.** 워커는 one-shot으로 돌고 결과를 Orchestrator가 검증하므로, 모델 품질이 곧 산출물 품질이다. 비용 절감을 위해 하위 티어로 내리는 것은 기본값이 아니라 예외이며, 그 경우 `task.md`에 근거를 남긴다.
 
-- **claude-main**: 기본은 별칭 **`opus`** (`.claude/agents/claude-main.md` frontmatter `model: opus`). 별칭은 어떤 환경에서도 해석되므로 안전한 기본값이지만, **별칭이 최신 세대를 가리킨다고 가정하지 말 것** — 실측 반례: `opus`가 같은 계정에서 `claude-opus-5`를 쓸 수 있는 상태였는데도 `claude-opus-4-8`로 해석됐다(2026-07-26). 최신·최상위 모델을 확정해 쓰려면 frontmatter에 전체 모델 ID를 명시 핀한다.
-  - **점검 절차 (별칭·핀 공통)**: `claude --model <별칭 또는 핀> -p hi --output-format json`의 `modelUsage` 키가 **실제 과금된 모델**을 알려준다. 이것이 유일한 진실원천이다. 새 모델 세대 출시 시나 분기 1회 확인.
-  - **핀 유효성 (필독)**: frontmatter의 전체 모델 ID는 availableModels allowlist 검증을 거친다 — allowlist에 없으면 **경고 없이 부모 모델을 상속**한다. 핀을 바꾼 뒤엔 반드시 위 점검으로 실제 해석값을 확인할 것. (그래서 배포 기본값은 별칭으로 둔다 — 접근권이 없는 환경에서 조용히 어긋나지 않게.)
-  - **추론 강도(effort)**: claude-main 정의엔 `effort` 필드가 **없음 → 세션 `/effort` 값을 상속**한다(현재 세션이 high면 high로 동작). 세션과 무관하게 고정하려면 frontmatter에 `effort: high` 등을 명시(상속 끔). 고정은 결정성↑이나 현재는 상속 유지가 기본.
-- **codex-main / codex-critic**: 사용자의 `~/.codex/config.toml` 기본값이 자동 적용된다 (현재 예: 최신 gpt + reasoning effort `high`). config.toml이 정본이라 여기에 버전을 핀하지 않는다. MCP 호출 시 `model` 파라미터를 비워두면 config 기본값 사용.
-  - 가벼운 작업은 `profile: lightweight`로 전환 가능 (config.toml의 가벼운 모델 프로필)
+**자동 추적은 불가능하다.** 별칭은 조용히 뒤처지고(아래 실측 반례) 핀은 낡는다. 따라서 **핀 + 주기 점검**이 유일한 방법이며, 아래 워커별 점검 절차를 하네스 작업 시작 전이나 분기 1회 수행한다.
+
+- **claude-main**: 명시 핀 **`claude-fable-5`** (`.claude/agents/claude-main.md` frontmatter). 별칭을 쓰지 않는 이유 — 실측 반례: `opus`가 같은 계정에서 `claude-opus-5`를 쓸 수 있는 상태였는데도 `claude-opus-4-8`로 해석됐다(2026-07-26, 과금 메타데이터 `modelUsage` 기준).
+  - **점검 절차**: `claude --model <핀> -p hi --output-format json`의 `modelUsage` 키가 **실제 과금된 모델**이다. 이것이 유일한 진실원천. 새 세대(Fable 6 등) 출시 시 핀을 갱신한다.
+  - **핀 유효성 (필독)**: frontmatter의 전체 모델 ID는 availableModels allowlist 검증을 거친다 — **allowlist에 없으면 경고 없이 부모 모델을 상속**한다. 즉 이 핀에 접근권이 없는 환경에서는 조용히 다른 모델로 돈다. **설치 직후 위 점검을 1회 수행**하고, 접근권이 없으면 그 환경에서 쓸 수 있는 최상위 모델로 핀을 낮춘 뒤 `log.md`에 근거를 남긴다.
+  - **추론 강도(effort)**: claude-main 정의엔 `effort` 필드가 **없음 → 세션 `/effort` 값을 상속**한다(현재 세션이 high면 high로 동작). 세션과 무관하게 고정하려면 frontmatter에 `effort: high` 등을 명시(상속 끔). 고정은 결정성↑이나 현재는 상속 유지가 기본. **최상위 모델을 쓰는 취지상 세션 effort를 낮게 두지 말 것.**
+- **codex-main / codex-critic**: 사용자의 `~/.codex/config.toml` 기본값이 자동 적용된다. **여기에 버전을 핀하지 않는다** — config.toml이 정본이고, 이중 관리하면 둘이 어긋난다. MCP 호출 시 `model` 파라미터를 비워두면 config 기본값 사용.
+  - **점검 절차**: `~/.codex/config.toml`의 `model`이 그 시점 최상위 gpt인지, `model_reasoning_effort`가 `high`인지 확인한다. 최상위 모델 원칙은 이 파일에서 지켜져야 한다 — 여기서 강제할 수단이 없다.
+  - 가벼운 작업은 `profile: lightweight`로 전환 가능 (config.toml의 가벼운 모델 프로필). 원칙상 예외이므로 `task.md`에 근거를 남긴다.
   - 작업 성격상 다른 모델이 필요하면 brief.md에 명시
 - **gemini**: 백엔드 = Antigravity **`agy` CLI**(`_shared/backends.json` 정본, 디스패처 `call_worker.sh`). 체인 = `gemini-3.6-flash-high`(1차) → `gemini-3.6-flash-low`(폴백A, 모델 강등) → api 별칭 `gemini-flash-latest`(폴백B, `adapters/gemini_api.sh`). 옛 `mcp__gemini-pro__*` 프록시 브리지·CLI 래퍼 `mcp__gemini__*`는 **폐기**.
   - **왜 flash가 기본인가**: `agy` 최신 세대(3.6)에는 **flash 티어만 존재한다**(3.6-pro 없음. pro는 구세대 `3.1-pro-high`까지). 세대와 티어가 엇갈릴 때는 최신 세대를 우선하므로 `gemini-3.6-flash-high`가 현 시점 최상위다.

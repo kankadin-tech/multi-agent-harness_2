@@ -5,6 +5,38 @@
 (정본: `generator/templates/{claude,codex}/CHANGELOG.md`)를 참조한다.
 형식은 [Keep a Changelog](https://keepachangelog.com/), 버전은 [Semantic Versioning](https://semver.org/lang/ko/)을 따른다.
 
+## [3.6.0] - 2026-07-26
+
+### Changed
+- **모든 워커를 최상위 모델로 핀 (3 flavor 전부)** — "모든 워커는 그 시점의 최상위 모델을 쓴다"를
+  명시 원칙으로 승격했다. 워커는 one-shot이고 결과를 Orchestrator가 검증하므로 모델 품질이 곧
+  산출물 품질이라는 근거. 하위 티어는 예외이며 `task.md`에 근거를 남긴다.
+  - claude 계열 워커: **별칭 → 전체 모델 ID 명시 핀**(`claude-fable-5`). 별칭은 조용히 뒤처지므로
+    (`opus` → 구세대 해석 실측 사례) 쓰지 않는다. claude flavor는 agent frontmatter + `model_alias`,
+    codex(`claude-critic`)·antigravity(`claude-main`)는 `--model` 인자.
+  - codex 워커: `~/.codex/config.toml`이 정본이므로 **의도적으로 핀하지 않는다**(이중 관리 시 드리프트).
+    대신 점검 절차(`model`이 최상위 gpt인지, `model_reasoning_effort`가 `high`인지)를 문서화.
+  - gemini: 이미 최신 세대 최상위(`gemini-3.6-flash-high`, 3.6에는 flash 티어만 존재).
+  - **자동 추적 불가**를 전제로 워커별 점검 절차를 3 flavor `routing.md`에 명시했다.
+
+### Added
+- **validate C15 — claude 워커 최상위 모델 명시 핀 검사** — 별칭(`opus`/`sonnet`/`fable` 등)과
+  `host-default`를 FAIL 처리한다. native 워커는 agent frontmatter와 `model_alias`의 **일치**까지,
+  cli 워커는 `model` 필드와 `--model` 인자의 **일치**까지 본다. 모델 버전은 하드코딩하지 않고
+  형태만 검사하므로 세대가 올라가도 깨지지 않는다. 3 flavor 모두 PASS 확인, 회귀 시 FAIL 확인.
+- **설치 절차에 필수 단계 2개 추가** (`configure-multiagent` 스킬) —
+  ① **모델 핀 실측 확인**: 전체 모델 ID 핀은 그 환경 allowlist에 없으면 경고 없이 부모 모델을
+  상속하므로, 설치 직후 `modelUsage`·`agy models`로 1회 실측하고 접근권이 없으면 낮춘 뒤 보고한다.
+  ② **`safety-guide` 스킬 실행**: 최상위 모델의 안전장치 오탐이 워커의 실제 실행 모델을 바꿀 수
+  있으므로 마찰 완화 가이드를 함께 세팅한다. 그 스킬의 §0 게이트 판정(스킵 포함)을 존중하고
+  결과를 보고하며, 미설치 환경이면 그 사실을 명시한다(가이드 본문을 손으로 창작하지 않는다).
+
+### Fixed
+- **codex·antigravity flavor의 claude 워커 호출이 깨져 있던 것 수정** — `args_template`이
+  `["--prompt", ...]`였으나 `claude` CLI에 `--prompt` 플래그는 **존재하지 않는다**
+  (`error: unknown option '--prompt'`). `-p`로 교정. 이 워커는 그동안 호출 시점에 실패했다.
+  (같은 `--prompt`를 쓰는 gemini/`agy` 경로는 정상 — `agy`는 실제로 그 플래그를 받는다.)
+
 ## [3.5.0] - 2026-07-26
 
 ### Fixed
