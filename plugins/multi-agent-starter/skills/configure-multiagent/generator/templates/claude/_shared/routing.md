@@ -71,7 +71,7 @@ decision tree로 "누구를" 고른 뒤, "어떻게 엮을지" 고른다. **단�
 - **호출 명령**: Claude Code 내장 **Task tool (sub-agent)**
   - `subagent_type`: `claude-main` (`.claude/agents/claude-main.md`에 정의)
   - `prompt`: brief.md 내용 그대로 전달
-  - `model`: agent 정의 파일 frontmatter의 `model: opus`가 자동 적용 (별칭 — 현재 환경의 Opus로 해석. 버전 문자열 핀하지 않음. 모델 정책 참조)
+  - `model`: agent 정의 파일 frontmatter의 `model: opus`가 자동 적용 (별칭 — **별칭이 최신 세대를 가리키지 않을 수 있다.** 모델 정책 참조)
   - `description`: 짧은 작업명 (3~5 단어)
 - **권한**: 메인 Claude Code 세션의 권한 모드 상속. `--dangerously-skip-permissions` (yolo) 모드면 sub-agent도 yolo로 작동. 단 MultiAgent 시스템 게이트(`workers_approved`, 외부 쓰기 4조건)는 별개로 유지된다
 - **비용**: 있음 (Opus(`opus` 별칭) sub-agent 호출. 별도 모델 호출이며 비용·쿼터 대상) → 승인 필요
@@ -120,23 +120,29 @@ decision tree로 "누구를" 고른 뒤, "어떻게 엮을지" 고른다. **단�
   ```
   bash _shared/adapters/call_worker.sh gemini <brief-file>   # 결과 = JSON envelope
   ```
-  백엔드 = Antigravity `agy` CLI(헤드리스), 기본 `gemini-3.1-pro-high`, 폴백 = api(`adapters/gemini_api.sh`). 폐기: `mcp__gemini-pro__*`·`mcp__gemini__*` 프록시 브리지.
+  백엔드 = Antigravity `agy` CLI(헤드리스), 기본 `gemini-3.6-flash-high`, 폴백A = `gemini-3.6-flash-low`(모델 강등), 폴백B = api(`adapters/gemini_api.sh`). 폐기: `mcp__gemini-pro__*`·`mcp__gemini__*` 프록시 브리지.
 - **이미지/PDF 검수 (단일 정본 경로, 필독)**: brief.md **본문에 분석 대상의 절대경로를 직접 적고** `call_worker.sh gemini <brief>`로 호출한다. 디스패처가 본문 전체를 프롬프트로 싣고(`args_template: --prompt @brief_content` — agy 1.0.16에서 `-p` 제거, 2026-07-03 교정·실측) `</dev/null`을 보장(`stdin: /dev/null`)하므로 agy가 본문 경로의 파일을 연다. **agy를 손으로 부르거나 `--add-dir`·`--dangerously-skip-permissions`를 쓰지 말 것** — 각각 stdin hang(타임아웃)·auto-mode classifier 차단의 원인이며, 이를 "비전 구조적 불가"로 오진한 사례가 있다(2026-06-28). 실측: 본문 절대경로 brief → exit 0(~26s), 픽셀크기·텍스트·검증코드 정확 반향.
 - **소스·다중파일 검토는 인라인 필수 (2026-07-04 실측, dayjs-bughunt)**: 소스 코드 발굴·검토를 시킬 땐 **디렉토리나 다수 파일 순회를 시키지 말 것** — agy 헤드리스가 300s 타임아웃(exit 124)으로 전멸한다. 필요한 스니펫을 orchestrator가 brief 본문에 **인라인**하고 "파일 열지 말 것"을 명시하라(동일 과제 인라인 재호출 실측 = 27s exit 0). 단일 이미지/PDF 경로 참조(위 항목)는 예외(~26s 정상). 시간 제한 작업에서 gemini에 의존하기 전 경량 스모크 1회로 가용성부터 확인.
 - **폴백 조건**: api 폴백은 `GEMINI_API_KEY` 필요 — 미설정이면 디스패처가 호출 시작 시 경고를 내고, primary 실패 시 폴백 없이 실패한다(실패 사유는 envelope `stderr_sanitized`에 남음).
-- **비용**: agy 쿼터 소모 → 승인 필요. 빠른 경로는 backends에서 `model`을 flash/pro-low로.
+- **비용**: agy 쿼터 소모 → 승인 필요. 기본이 이미 flash 티어이며, 더 가볍게는 backends에서 `model`을 `-medium`/`-low`로.
 - **파일 쓰기**: ❌ MCP 응답을 Orchestrator가 받아 기록
 
 ## 모델 정책
 
 각 worker가 실제 어떤 모델로 도는지 정리. 사용자가 매번 명시할 필요는 없으며, 아래 기본이 자동 적용된다.
 
-- **claude-main**: 별칭 **`opus`** (`.claude/agents/claude-main.md` frontmatter `model: opus`). 버전 문자열을 핀하지 않는다 — 별칭이 현재 환경의 최신 Opus로 자동 해석되므로 모델이 올라가도 갱신 불필요.
+- **claude-main**: 기본은 별칭 **`opus`** (`.claude/agents/claude-main.md` frontmatter `model: opus`). 별칭은 어떤 환경에서도 해석되므로 안전한 기본값이지만, **별칭이 최신 세대를 가리킨다고 가정하지 말 것** — 실측 반례: `opus`가 같은 계정에서 `claude-opus-5`를 쓸 수 있는 상태였는데도 `claude-opus-4-8`로 해석됐다(2026-07-26). 최신·최상위 모델을 확정해 쓰려면 frontmatter에 전체 모델 ID를 명시 핀한다.
+  - **점검 절차 (별칭·핀 공통)**: `claude --model <별칭 또는 핀> -p hi --output-format json`의 `modelUsage` 키가 **실제 과금된 모델**을 알려준다. 이것이 유일한 진실원천이다. 새 모델 세대 출시 시나 분기 1회 확인.
+  - **핀 유효성 (필독)**: frontmatter의 전체 모델 ID는 availableModels allowlist 검증을 거친다 — allowlist에 없으면 **경고 없이 부모 모델을 상속**한다. 핀을 바꾼 뒤엔 반드시 위 점검으로 실제 해석값을 확인할 것. (그래서 배포 기본값은 별칭으로 둔다 — 접근권이 없는 환경에서 조용히 어긋나지 않게.)
   - **추론 강도(effort)**: claude-main 정의엔 `effort` 필드가 **없음 → 세션 `/effort` 값을 상속**한다(현재 세션이 high면 high로 동작). 세션과 무관하게 고정하려면 frontmatter에 `effort: high` 등을 명시(상속 끔). 고정은 결정성↑이나 현재는 상속 유지가 기본.
 - **codex-main / codex-critic**: 사용자의 `~/.codex/config.toml` 기본값이 자동 적용된다 (현재 예: 최신 gpt + reasoning effort `high`). config.toml이 정본이라 여기에 버전을 핀하지 않는다. MCP 호출 시 `model` 파라미터를 비워두면 config 기본값 사용.
   - 가벼운 작업은 `profile: lightweight`로 전환 가능 (config.toml의 가벼운 모델 프로필)
   - 작업 성격상 다른 모델이 필요하면 brief.md에 명시
-- **gemini**: 백엔드 = Antigravity **`agy` CLI**(`_shared/backends.json` 정본, 디스패처 `call_worker.sh`). 기본 `gemini-3.1-pro-high`(agy에선 정상 — 옛 프록시 `400 INVALID_ARGUMENT`은 비해당), 빠른 경로 `gemini-3-flash`/`pro-low`, 폴백 `api`. 옛 `mcp__gemini-pro__*` 프록시 브리지·CLI 래퍼 `mcp__gemini__*`는 **폐기**. agy 모델은 전역·계정단위(`/model`)라 per-call 핀 불가 → gemini 전용 전역을 pro-high로 둔다. 근거: `_shared/learnings.md` [2026-06-02] · `design-basis.md` D4.
+- **gemini**: 백엔드 = Antigravity **`agy` CLI**(`_shared/backends.json` 정본, 디스패처 `call_worker.sh`). 체인 = `gemini-3.6-flash-high`(1차) → `gemini-3.6-flash-low`(폴백A, 모델 강등) → api 별칭 `gemini-flash-latest`(폴백B, `adapters/gemini_api.sh`). 옛 `mcp__gemini-pro__*` 프록시 브리지·CLI 래퍼 `mcp__gemini__*`는 **폐기**.
+  - **왜 flash가 기본인가**: `agy` 최신 세대(3.6)에는 **flash 티어만 존재한다**(3.6-pro 없음. pro는 구세대 `3.1-pro-high`까지). 세대와 티어가 엇갈릴 때는 최신 세대를 우선하므로 `gemini-3.6-flash-high`가 현 시점 최상위다.
+  - **per-call 핀 가능** (2026-07-26 교정): 과거 "agy 모델은 전역·계정단위(`/model`)라 per-call 핀 불가"라고 기록돼 있었으나, 현재 `agy`는 `--model <id>` 플래그로 호출별 지정이 되며 backends.json이 그 방식을 쓴다. 구 기록 근거(`_shared/learnings.md` [2026-06-02] · `design-basis.md` D4)는 이 지점에서 무효.
+  - **점검 절차**: `agy models`로 가용 목록을 뽑아 핀이 여전히 최신 세대·최상위 티어인지 대조한다. `agy`는 별칭을 제공하지 않으므로 **핀 + 주기 점검이 유일한 방법**이다. 새 세대나 동세대 pro 티어가 보이면 핀을 갱신한다.
+  - **폴백B 상태**: 어댑터 구현 완료·검증 완료(2026-07-26, 실호출 exit 0). `GEMINI_API_KEY` 필요. `agy` OAuth와 **독립된 인증 경로**라 Antigravity 장애 시에도 생존한다 — 폴백A는 같은 인증을 쓰므로 서비스 레벨 이중화는 폴백B가 담당한다.
 
 이 정책은 사용자별 config에 따라 달라질 수 있다 — starter clone 받은 학습자는 본인의 `~/.codex/config.toml` 기본값을 한 번 확인하고 자기 환경에 맞게 조정한다.
 

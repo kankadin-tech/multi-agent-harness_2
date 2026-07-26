@@ -5,6 +5,37 @@
 (정본: `generator/templates/{claude,codex}/CHANGELOG.md`)를 참조한다.
 형식은 [Keep a Changelog](https://keepachangelog.com/), 버전은 [Semantic Versioning](https://semver.org/lang/ko/)을 따른다.
 
+## [3.5.0] - 2026-07-26
+
+### Fixed
+- **gemini 워커 모델 핀이 2세대 뒤처져 있던 것 갱신** (claude·codex flavor) — `gemini-3.1-pro-high`
+  → `gemini-3.6-flash-high`. 최신 세대(3.6)에는 flash 티어만 존재하므로(3.6-pro 없음) 세대·티어가
+  엇갈릴 때 최신 세대를 우선한 결과다.
+- **"agy는 per-call 핀 불가"라는 잘못된 기술 교정** — 현재 `agy`는 `--model <id>` 플래그로 호출별
+  모델 지정이 되며, `backends.json`이 그 방식을 쓰도록 바뀌었다. 이제 gemini 워커 모델은 `agy`
+  전역/계정 설정에 의존하지 않는다. `routing.md`(claude·codex)·`docs/ACCEPTANCE.md` 반영.
+- **validate C6가 모델 버전 문자열을 하드코딩하던 것 제거** — `gemini-3.1-pro-high` 고정 비교 때문에
+  모델 세대가 올라가면 검사가 깨졌다. 버전 무관 불변조건(agy 백엔드 / `gemini-*` 계열 / 선언된
+  `model`과 실제 `--model` 인자 일치)으로 대체. 선언·인자 드리프트를 새로 잡아낸다.
+  (antigravity 분기는 여전히 모델명을 하드코딩 — 템플릿 AGENTS.md 문구와 함께 손봐야 해 후속으로 남김.)
+
+### Added
+- **gemini api 폴백(`adapters/gemini_api.sh`) 실제 구현** — 기존에는 항상 `exit 4`로 실패하는
+  슬롯 스텁이었다(spike S3 미완). Gemini REST `generateContent` 호출로 구현하고 실호출 검증 완료.
+  모델은 `GEMINI_API_MODEL`로 오버라이드 가능하며 기본값 `gemini-flash-latest`는 벤더가 갱신하는
+  별칭이라 자동 추적된다. 키 값은 에러 로그에 남기지 않는다.
+- **gemini 폴백 체인에 모델 강등 단계(폴백A) 추가** — `flash-high` → `flash-low` → `api`.
+  기존 1차·api 2단 구조에서는 `agy` 일시 실패가 곧바로 api 폴백(별도 키 필요)으로 떨어졌다.
+  폴백A는 같은 인증을 쓰므로 **서비스 레벨 이중화는 폴백B(api, 독립 인증)가 담당**한다는 역할
+  분리를 문서에 명시.
+- **`CLAUDE.md`에 "모델 지정 ≠ 실제 실행 모델" 절 신설** — claude-main의 frontmatter 모델 지정이
+  실제 실행 모델을 보장하지 않는 두 경로를 기록했다. ① 별칭 지연(`opus`가 최신 세대를 안 가리킬
+  수 있음 — 같은 계정에서 상위 세대가 가용한데도 하위로 해석된 실측 반례 있음) ② allowlist 미스
+  (전체 모델 ID를 핀했는데 그 환경 allowlist에 없으면 **경고 없이 부모 모델 상속**). `result.md`에는
+  실제 실행 모델이 안 남으므로, 모델 확정이 필요한 작업은 `--output-format json`의 `modelUsage`로
+  실측하고 `log.md`에 기록하도록 절차화. 배포 기본값은 계속 별칭(`opus`) — 접근권 없는 환경에서
+  조용히 어긋나지 않게 하기 위함.
+
 ## [3.4.0] - 2026-07-17
 
 ### Merged

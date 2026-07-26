@@ -141,8 +141,10 @@ def run_checks(target: Path, flavor: str) -> list[tuple[bool, str]]:
           f"C5b 2층 라우팅 (routing→profile 참조: {'OK' if link_ok else '없음'}, "
           f"트리 슬롯 태그 누락: {miss_tree or '-'}, 프로필 배정행 이상: {bad_rows or '-'})")
 
-    # C6 gemini 정책. claude/codex: gemini 워커가 cli/agy + pro-high. antigravity: 오케스트레이터가
-    # agy(Gemini Pro High)이므로 별도 gemini 워커 없음 — 지침이 agy/pro-high 오케스트레이터를 명시하는지.
+    # C6 gemini 정책. claude/codex: gemini 워커가 cli/agy + per-call `--model` 핀(버전 무관 검사).
+    # antigravity: 오케스트레이터 자체가 agy이므로 별도 gemini 워커 없음 — 지침이 agy 오케스트레이터를
+    # 명시하는지 본다. NOTE: antigravity 분기는 아직 모델명을 하드코딩한다(모델 세대가 올라가면 깨짐).
+    # claude/codex 분기와 같은 버전 무관 형태로 바꾸려면 antigravity 템플릿 AGENTS.md 문구도 함께 손봐야 한다.
     if flavor == "antigravity":
         c6_ok = ("Gemini 3.1 Pro High" in instr_txt) and (("agy" in instr_txt) or ("Antigravity" in instr_txt))
         c6_why = "AGENTS.md가 agy/Gemini 3.1 Pro High 오케스트레이터 명시해야"
@@ -251,7 +253,13 @@ def _backend_record_problems(rec: dict, where: str, target: Path, *, is_fallback
 
 
 def _gemini_policy_ok(raw: str | None) -> tuple[bool, str]:
-    """C6: gemini 워커가 cli/agy + gemini-3.1-pro-high 인지 레코드 직접 검사."""
+    """C6: gemini 워커가 cli/agy + per-call `--model` 핀인지 레코드 직접 검사.
+
+    특정 모델 버전을 하드코딩하지 않는다 — 그러면 모델 세대가 올라갈 때마다 이 검사가
+    깨진다(실제로 3.1-pro-high 핀이 그랬다). 대신 버전 무관 불변조건을 본다:
+    agy 백엔드인지, gemini 계열 모델인지, 선언된 `model`과 실제 `--model` 인자가
+    일치하는지(둘이 어긋나면 문서·설정 드리프트).
+    """
     if raw is None:
         return False, "backends.json 없음"
     try:
@@ -260,10 +268,17 @@ def _gemini_policy_ok(raw: str | None) -> tuple[bool, str]:
         return False, f"파싱 실패: {e}"
     if not isinstance(g, dict):
         return False, "gemini 워커 없음"
-    if g.get("call_type") != "cli" or g.get("cli", {}).get("command") != "agy":
+    cli = g.get("cli") or {}
+    if g.get("call_type") != "cli" or cli.get("command") != "agy":
         return False, "gemini call_type cli·command agy 아님"
-    if g.get("model") != "gemini-3.1-pro-high":
-        return False, f"gemini model이 pro-high 아님({g.get('model')})"
+    model = g.get("model")
+    if not isinstance(model, str) or not model.startswith("gemini-"):
+        return False, f"gemini model이 gemini-* 아님({model})"
+    args = cli.get("args_template") or []
+    if "--model" not in args:
+        return False, "cli args_template에 per-call --model 핀 없음"
+    if args[args.index("--model") + 1 :][:1] != [model]:
+        return False, f"--model 인자가 선언된 model({model})과 불일치"
     return True, ""
 
 

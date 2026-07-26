@@ -93,7 +93,7 @@ write_scope: none | tasks-only | "src/**, tests/**"
 - **슬롯**: multimodal
 - **용도**: 이미지/스크린샷/다이어그램 분석, 50페이지 이상 문서 스캔, 제3자 시각의 검토.
 - **결과물**: 분석 텍스트, 요약, 검토 의견.
-- **호출 방식**: `_shared/backends.json`의 `gemini`가 정본 — 백엔드 = Antigravity `agy` CLI, 디스패처 `bash _shared/adapters/call_worker.sh gemini <brief-file>`(결과 JSON envelope). 기본 `gemini-3.1-pro-high`, 빠른 경로 `gemini-3-flash`/`pro-low`, 폴백 `api`. 옛 `mcp__gemini-pro__*` 프록시 브리지 폐기.
+- **호출 방식**: `_shared/backends.json`의 `gemini`가 정본 — 백엔드 = Antigravity `agy` CLI, 디스패처 `bash _shared/adapters/call_worker.sh gemini <brief-file>`(결과 JSON envelope). 체인 = `gemini-3.6-flash-high`(1차) → `gemini-3.6-flash-low`(폴백A, 모델 강등) → `api`(폴백B). 옛 `mcp__gemini-pro__*` 프록시 브리지 폐기.
 - **소스·다중파일 검토는 인라인 필수**: 소스 코드 발굴·검토를 시킬 땐 **디렉토리나 다수 파일 순회를 시키지 말 것** — agy 헤드리스가 300s 타임아웃(exit 124)으로 실패한다(2026-07-04 실측). 필요한 스니펫을 orchestrator가 brief 본문에 **인라인**하고 "파일 열지 말 것"을 명시하라(인라인 재호출 실측 = 27s exit 0). 단일 이미지/PDF 경로 참조는 예외. 시간 제한 작업에서 gemini에 의존하기 전 경량 스모크 1회로 가용성부터 확인.
 - **폴백 조건**: api 폴백은 `GEMINI_API_KEY` 필요 — 미설정이면 디스패처가 호출 시작 시 경고를 내고, primary 실패 시 폴백 없이 실패한다(실패 사유는 envelope `stderr_sanitized`에 남음).
 - **쓰기 권한**: 없음. Orchestrator가 응답을 `result.md`에 기록한다.
@@ -103,7 +103,7 @@ write_scope: none | tasks-only | "src/**, tests/**"
 - **Codex Orchestrator**: 현재 Codex 세션의 모델과 reasoning 설정을 따른다.
 - **codex-main**: 별도 Codex worker를 쓸 때도 기본적으로 현재 Codex 환경의 설정을 상속한다. repo 문서에 버전 문자열을 핀하지 않는다.
 - **claude-critic**: 승인된 Claude 도구의 현재 기본/별칭 모델을 사용한다. 버전 문자열은 환경 소유 사실이므로 repo에 핀하지 않는다.
-- **gemini**: 백엔드 = Antigravity `agy` CLI(`backends.json` 정본), 기본 `gemini-3.1-pro-high`(agy에선 정상 — 옛 프록시 400은 비해당), 빠른 경로 `gemini-3-flash`/`pro-low`. agy 모델은 전역·계정단위(`/model`)라 gemini 전용 전역을 pro-high로 둔다. 옛 `mcp__gemini-pro__*` 브리지 폐기.
+- **gemini**: 백엔드 = Antigravity `agy` CLI(`backends.json` 정본). 체인 = `gemini-3.6-flash-high` → `gemini-3.6-flash-low` → `api`. 최신 세대(3.6)에는 flash 티어만 있으므로(pro는 구세대 `3.1-pro-high`까지) flash-high가 현 시점 최상위다. **per-call 핀 가능** — `--model <id>` 플래그로 호출별 지정(과거 "전역·계정단위라 per-call 불가" 기록은 무효, 2026-07-26 교정). `agy`는 별칭이 없으므로 `agy models`로 주기 점검해 핀을 갱신한다. 옛 `mcp__gemini-pro__*` 브리지 폐기.
 
 ## 최소 Worker Set
 
