@@ -2,6 +2,23 @@
 
 이 파일은 multi-agent-starter (Codex flavor) orchestration 시스템의 주요 변경을 기록한다.
 
+## [0.7.0] - 2026-07-26
+
+### Changed
+- **모든 워커는 그 시점의 최상위 모델을 쓴다** — 명시 원칙으로 승격(`_shared/routing.md` 모델 정책).
+  하위 티어는 예외이며 `task.md`에 근거를 남긴다.
+- **`claude-critic` 모델을 전체 ID 명시 핀으로 전환** (`--model claude-fable-5`). 별칭은 조용히
+  뒤처지므로 쓰지 않는다.
+- **codex-main은 의도적으로 핀하지 않는다** — `~/.codex/config.toml`이 정본. 대신 점검 절차 문서화.
+
+### Fixed
+- **`claude-critic` 호출이 깨져 있던 것 수정** — `args_template`이 `--prompt`였으나 `claude` CLI에
+  그런 플래그는 없다(`unknown option`). `-p`로 교정. 그동안 이 워커는 호출 시점에 실패했다.
+
+### Added
+- **워커별 모델 점검 절차** — claude는 `modelUsage` 실측, gemini는 `agy models` 대조,
+  codex는 config.toml 확인. 핀이 환경 allowlist에 없으면 경고 없이 다른 모델로 도는 점 명시.
+
 ## [0.6.0] - 2026-07-26
 
 ### Fixed

@@ -3,6 +3,23 @@
 이 파일은 MultiAgent orchestration 시스템의 주요 변경을 기록한다.
 형식은 [Keep a Changelog](https://keepachangelog.com/), 버전은 [Semantic Versioning](https://semver.org/lang/ko/)을 따른다.
 
+## [1.6.0] - 2026-07-26
+
+### Changed
+- **모든 워커는 그 시점의 최상위 모델을 쓴다** — 명시 원칙으로 승격(`CLAUDE.md` 모델 정책 절 +
+  `_shared/routing.md`). 하위 티어는 예외이며 `task.md`에 근거를 남긴다.
+- **claude-main 모델을 전체 ID 명시 핀으로 전환** (`claude-fable-5`). 별칭은 조용히 뒤처지므로
+  쓰지 않는다 — `opus` 별칭이 상위 세대가 가용한 계정에서 구세대로 해석된 실측 사례가 있다.
+- **codex 워커는 의도적으로 핀하지 않는다** — `~/.codex/config.toml`이 정본이라 이중 관리 시
+  드리프트가 생긴다. 대신 점검 절차(최상위 gpt·`model_reasoning_effort: high`)를 문서화.
+
+### Added
+- **워커별 모델 점검 절차** (`routing.md`) — 자동 추적 수단이 없으므로(별칭은 뒤처지고 핀은 낡는다)
+  claude는 `modelUsage` 실측, gemini는 `agy models` 대조, codex는 config.toml 확인을 주기 수행한다.
+- **설치 직후 필수 확인 2건** — ① 모델 핀 실측(핀이 그 환경 allowlist에 없으면 **경고 없이 부모
+  모델을 상속**하므로 1회 확인 후 필요 시 낮춤) ② `safety-guide` 스킬로 마찰 완화 가이드 세팅
+  (최상위 모델의 안전장치 오탐이 실제 실행 모델을 바꿀 수 있음).
+
 ## [1.5.0] - 2026-07-26
 
 ### Fixed

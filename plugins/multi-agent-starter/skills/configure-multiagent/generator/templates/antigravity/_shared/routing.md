@@ -106,9 +106,14 @@ write_scope: none | tasks-only | "src/**, tests/**"
 
 ## 모델 정책
 
-- **Antigravity Orchestrator**: agy/IDE의 현재 모델 = **Gemini 3.1 Pro High**(전역·계정단위 `/model`). 멀티모달·긴 문서도 오케스트레이터가 직접.
-- **claude-main**: 승인된 `claude` CLI의 현재 기본/별칭 모델. 버전 문자열을 repo에 핀하지 않는다.
-- **codex-main / codex-critic**: 현재 Codex 환경(`~/.codex/config.toml`) 기본값을 상속. repo에 버전 핀 금지.
+**원칙 — 모든 워커는 그 시점의 최상위 모델을 쓴다.** 워커는 one-shot이고 결과를 Orchestrator가 검증하므로 모델 품질이 곧 산출물 품질이다. 하위 티어로 내리는 것은 예외이며 `task.md`에 근거를 남긴다. **자동 추적 수단이 없다** — 별칭은 조용히 뒤처지고 핀은 낡으므로 아래 점검을 주기적으로 수행한다.
+
+- **Antigravity Orchestrator**: agy/IDE의 현재 모델(전역·계정단위 `/model`). 멀티모달·긴 문서도 오케스트레이터가 직접.
+  - **점검 절차**: `agy models`로 가용 목록을 뽑아 현재 선택이 최신 세대·최상위 티어인지 대조한다. `agy`는 별칭이 없어 자동 추적이 불가하다.
+- **claude-main**: `backends.json`이 **`--model`로 전체 모델 ID를 명시 핀**한다(별칭 금지 — `opus` 별칭이 구세대로 해석된 실측 사례가 있다). validate C15가 이 형태를 강제한다.
+  - **점검 절차**: `claude --model <핀> -p hi --output-format json`의 `modelUsage` 키가 실제 과금된 모델이다. **핀이 그 환경 allowlist에 없으면 경고 없이 다른 모델로 도니** 설치 직후 1회 확인하고, 접근권이 없으면 쓸 수 있는 최상위로 낮춘 뒤 `log.md`에 근거를 남긴다.
+- **codex-main / codex-critic**: 현재 Codex 환경(`~/.codex/config.toml`) 기본값을 상속. repo에 버전 핀 금지(config.toml이 정본).
+  - **점검 절차**: config.toml의 `model`이 최상위 gpt인지, `model_reasoning_effort`가 `high`인지 확인.
 - **gemini 워커 없음**: 오케스트레이터가 Gemini라 별도 gemini 워커는 두지 않는다(같은 벤더 독립성 무의미).
 
 ## 최소 Worker Set
