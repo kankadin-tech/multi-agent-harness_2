@@ -146,6 +146,8 @@ wc -w tasks/<task>/context.md   # 영문 단어수
 - 작업당 worker 호출 예산: `task.md`의 `max_worker_calls` (기본 6). 초과 전 사용자 확인 (상세: `_shared/approval-policy.md`)
 - 호스트 네이티브 서브에이전트(Claude Code의 Agent 도구 등)는 **read-only 탐색**(코드베이스 파악·검색)만 무승인 허용. 산출물을 만드는 위임은 반드시 워커 풀 경유(승인 대상) — 서브에이전트로 우회하면 brief·result 기록과 감사 로그가 비므로 금지.
 
+**이 게이트는 코드로 강제된다 (D14).** 판정 정본은 `_shared/hooks/approval_gate.py`이고 두 곳에서 돈다: `call_worker.sh` 진입부(cli/api 워커 — 셸에서 직접 실행해도 막힌다)와 PreToolUse 훅(`.claude/settings.json` — MCP codex·서브에이전트 claude-main). 거부되면 사유와 해소 방법이 함께 나온다. 예산 초과도 차단되며, 해소 경로는 사용자 확인 후 `task.md`의 `max_worker_calls`를 올리는 것이다(그 편집 자체가 감사 기록이 된다). 우회 스위치는 `MULTIAGENT_SKIP_APPROVAL_GATE=1` 하나뿐이고 쓰면 경고가 남는다.
+
 ## Verification (결과물 수락 전 필수)
 
 각 worker `result.md`에 포함된 Verification Checklist를 실행하고, 결과를 `log.md`에 `[VERIFICATION]` 태그로 기록.

@@ -88,7 +88,8 @@ decision tree로 "누구를" 고른 뒤, "어떻게 엮을지" 고른다. **단�
     - 기본: `~/VSCodeWorkspace/MultiAgent/tasks/<task>/` — 이 안에서 산출물·diff 직접 작성
     - 외부 쓰기 4조건 충족 시: brief.md의 `target_repo` 값으로 변경
   - `sandbox`: `workspace-write` 고정 (cwd 내부만 쓰기 가능. cwd 밖은 sandbox가 차단)
-  - `approval-policy`: `on-failure` 권장
+  - `approval-policy`: `never` 고정 — 워커는 헤드리스라 승인 프롬프트에 답할 채널이 없다(`codex exec`에는 승인 플래그 자체가 없다). 안전 경계는 승인정책이 아니라 **sandbox + cwd**가 담당한다 (D13)
+  - 위 세 값의 정본은 `_shared/backends.json`의 `codex-main` 항목이다 — 이 문단은 그 사본이므로 어긋나면 backends.json이 이긴다
 - **brief 필수 필드** (오케스트레이터가 사용자에게 target_repo를 먼저 묻고 답을 받아 채운다 — 분석·리뷰·요약 작업은 예외):
   ```yaml
   target_repo: /absolute/path/to/repo                   # 작업 대상 절대 경로 (없으면 N/A)
@@ -106,7 +107,7 @@ decision tree로 "누구를" 고른 뒤, "어떻게 엮을지" 고른다. **단�
 - **선행 조건**: 리뷰 대상 산출물 경로가 존재 — 보통 claude-main `result.md`, 또는 brief에 명시된 기존 코드·문서·소스
 - **결과물**: 비평 리스트, 수정 제안
 - **호출 명령**: codex-main과 동일 (`mcp__codex__codex` MCP). 단 다음 강제:
-  - `sandbox`: `read-only` 고정 (쓰기 금지)
+  - `sandbox`: `read-only` 고정 (쓰기 금지) — codex-main(`workspace-write`)과의 유일한 차등이며, 이 차등은 `_shared/backends.json`의 두 항목에 실제로 박혀 있어야 한다
   - brief에 "비평 모드" 명시
   - brief의 `target_repo` 명시 (비평 대상 repo 컨텍스트), `write_scope: none`
 - **비용**: 있음 → 승인 필요

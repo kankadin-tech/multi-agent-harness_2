@@ -42,6 +42,15 @@ def main() -> None:
         vcfg = tgt / "_shared" / "vault.config"
         vcfg.write_text("vault=~/my/custom/vault\ndomain=my-domain\n", encoding="utf-8")
 
+        # KI-4 회귀 잠금: _shared/learnings.md 는 CLAUDE.md Task Lifecycle이 append를 지시하는
+        # 누적물이다. update가 번들본으로 덮으면 로컬 교훈이 소실된다(2026-08-01 종결).
+        slearn = tgt / "_shared" / "learnings.md"
+        slearn.write_text("# 교훈\n\n- 로컬 누적 항목\n", encoding="utf-8")
+
+        # 승인 게이트 훅 배선도 사용자가 손댔을 수 있으므로 scaffold-once (D14)
+        settings = tgt / ".claude" / "settings.json"
+        settings.write_text('{"hooks":{},"_mine":true}\n', encoding="utf-8")
+
         # 시스템 파일 변조(update가 되돌리는지)
         (tgt / "_shared" / "routing.md").write_text("STALE", encoding="utf-8")
 
@@ -56,6 +65,11 @@ def main() -> None:
              (ul / "learnings.md").read_text(encoding="utf-8") == "LOCAL"),
             ("_shared/vault.config scaffold-once 보존(사용자 설정 무손상)",
              vcfg.read_text(encoding="utf-8") == "vault=~/my/custom/vault\ndomain=my-domain\n"),
+            ("_shared/learnings.md 로컬 누적 보존 (KI-4)",
+             "로컬 누적 항목" in slearn.read_text(encoding="utf-8")),
+            (".claude/settings.json 사용자 배선 보존 (D14 scaffold-once)",
+             '"_mine": true' in settings.read_text(encoding="utf-8")
+             or '"_mine":true' in settings.read_text(encoding="utf-8")),
             ("_shared/routing.md 갱신",
              (tgt / "_shared" / "routing.md").read_text(encoding="utf-8") != "STALE"),
         ]

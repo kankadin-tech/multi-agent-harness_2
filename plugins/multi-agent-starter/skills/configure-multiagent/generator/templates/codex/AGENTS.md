@@ -135,6 +135,8 @@ If `context.md` exceeds the limit, append history to `log.md`, then keep only th
 - Codex Orchestrator internal reasoning does not require approval.
 - External paid model tools still require explicit user approval even if the task is already created.
 - Per-task worker call budget: `max_worker_calls` in `task.md` (default 6). Confirm with the user before exceeding (details: `_shared/approval-policy.md`).
+
+**This gate is enforced in code (D12).** The single source of judgment is `_shared/hooks/approval_gate.py`, invoked at the entry point of `call_worker.sh` — running the dispatcher directly from a shell is blocked too. A denial states the reason and how to resolve it. Budget overrun is also blocked; the resolution is to raise `max_worker_calls` in `task.md` after user confirmation, and that edit is itself the audit record. The only bypass is `MULTIAGENT_SKIP_APPROVAL_GATE=1`, which logs a warning.
 - Host-native subagent/task tools (e.g. Claude Code's Agent tool): read-only exploration only (codebase understanding, search) without approval. Any delegation that produces artifacts must go through the worker pool (subject to approval) — routing it through a subagent leaves the brief/result record and audit log empty, so it is forbidden.
 
 ## Verification

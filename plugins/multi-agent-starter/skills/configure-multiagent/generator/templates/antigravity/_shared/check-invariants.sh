@@ -128,6 +128,14 @@ else
   fail "INV13 max_worker_calls 누락 (D8d)"
 fi
 
+# INV14 — 승인 게이트가 코드로 강제됨 (2026-08-01, D12)
+if grep -q 'workers_approved' "$ROOT/_shared/hooks/approval_gate.py" 2>/dev/null \
+   && grep -q 'approval_gate\.py' "$ROOT/_shared/adapters/call_worker.sh" 2>/dev/null; then
+  pass "INV14 승인 게이트 기계적 강제"
+else
+  fail "INV14 승인 게이트가 코드로 강제되지 않음"
+fi
+
 echo "----"
 echo "SUMMARY: PASS=$PASS FAIL=$FAIL SKIP=$SKIP"
 if [ "$FAIL" -ge 1 ]; then

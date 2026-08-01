@@ -30,10 +30,19 @@ def init(tgt: Path, f: str) -> subprocess.CompletedProcess:
                 "--flavor", f, "--target", str(tgt), "--yes", "--no-validate"])
 
 
-def _guard_artifact(tgt: Path, f: str) -> Path:
-    """flavor별 가드 배선 산출물 경로(부재 단언용). antigravity는 산출물 없음(None)."""
-    return {"claude": tgt / ".claude" / "settings.json",
-            "codex": tgt / "_shared" / "guard" / "codex_goal_watch.mjs"}.get(f)
+def _quota_guard_absent(tgt: Path, f: str) -> bool:
+    """요금가드(coach) 배선이 생성물에 없는지 — 그 설치는 loadout 소관(D10 v3.0.0 이관).
+
+    claude flavor는 2026-08-01부터 starter가 `.claude/settings.json`을 **직접 깐다**(승인 게이트
+    훅 배선, D14). 따라서 "파일 부재"가 아니라 "요금가드 배선 부재"를 단언해야 한다 — 두 배선은
+    같은 파일에 살 수 있고, 여기서 막으려는 것은 coach 쪽뿐이다.
+    """
+    if f == "claude":
+        s = tgt / ".claude" / "settings.json"
+        return "coach" not in s.read_text(encoding="utf-8") if s.is_file() else True
+    if f == "codex":
+        return not (tgt / "_shared" / "guard" / "codex_goal_watch.mjs").is_file()
+    return True  # antigravity는 가드 배선 산출물 자체가 없음
 
 
 def validate_all_pass() -> int:
@@ -63,10 +72,13 @@ def slim_checks() -> int:
             no_knot = KNOT_START not in txt and KNOT_END not in txt
             print(f"  {'PASS' if no_knot else 'FAIL'} [{f}] 기본 init 관리블록 부재")
             fails += not no_knot
-            art = _guard_artifact(tgt, f)
-            no_guard = art is None or not art.is_file()
-            print(f"  {'PASS' if no_guard else 'FAIL'} [{f}] 기본 init 가드 산출물 부재")
+            no_guard = _quota_guard_absent(tgt, f)
+            print(f"  {'PASS' if no_guard else 'FAIL'} [{f}] 기본 init 요금가드 배선 부재")
             fails += not no_guard
+            # 반대로 승인 게이트(D14)는 3 flavor 전부에 깔려야 한다.
+            gate = (tgt / "_shared" / "hooks" / "approval_gate.py").is_file()
+            print(f"  {'PASS' if gate else 'FAIL'} [{f}] 승인 게이트 판정기 배포")
+            fails += not gate
     return fails
 
 

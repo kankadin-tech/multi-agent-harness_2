@@ -24,9 +24,17 @@ TEMPLATES_DIR = SCRIPT_DIR / "templates"
 FLAVORS = ("claude", "codex", "antigravity")
 # 사용자 데이터 디렉토리 — 내용물은 절대 덮어쓰거나 지우지 않는다(.gitkeep만 보장).
 PRESERVE_DIRS = ("tasks", "_local")
-# scaffold-once 파일 — 신규 설치엔 정본을 깔되, 이미 있으면 사용자 설정이므로 보존(덮어쓰지 않음).
-# 볼트 브리지 vault.config 는 볼트 경로·기본 도메인 같은 사용자 설정이라 update가 지우면 안 된다.
-PRESERVE_IF_EXISTS = ("_shared/vault.config",)
+# scaffold-once 파일 — 신규 설치엔 정본을 깔되, 이미 있으면 사용자 설정·누적물이므로 보존(덮어쓰지 않음).
+#   _shared/vault.config      볼트 경로·기본 도메인 같은 사용자 설정
+#   _shared/learnings.md      CLAUDE.md Task Lifecycle이 append를 지시하는 누적 교훈. 번들본은
+#                             씨앗일 뿐이며, update가 덮으면 로컬 누적이 소실된다(KI-4, 2026-08-01 종결).
+#   .claude/settings.json     승인 게이트 훅 배선(D14). 사용자가 다른 훅·권한을 넣었을 수 있으므로
+#                             기존 파일을 덮지 않는다 — 기존 설치는 안내를 보고 직접 병합한다.
+PRESERVE_IF_EXISTS = (
+    "_shared/vault.config",
+    "_shared/learnings.md",
+    ".claude/settings.json",
+)
 
 # flavor별 지침파일(에이전트가 자동 로드) — validate.py FLAVOR['instruction']과 일치해야.
 INSTRUCTION_FILE = {"claude": "CLAUDE.md", "codex": "AGENTS.md", "antigravity": "AGENTS.md"}
@@ -135,6 +143,12 @@ def main() -> None:
     if preserved:
         names = ", ".join(p.as_posix() for p in preserved)
         print(f"  {prefix}{len(preserved)}개 사용자 설정 보존(scaffold-once, 덮어쓰지 않음): {names}")
+        if any(p.as_posix() == ".claude/settings.json" for p in preserved):
+            print(
+                "  [주의] 기존 .claude/settings.json 을 보존했으므로 승인 게이트 훅이 배선되지 않았습니다.\n"
+                "         PreToolUse 훅을 직접 병합하세요 — 배선 예시는 템플릿의 같은 경로 파일 참조.\n"
+                "         (call_worker.sh 경유 호출은 배선 없이도 게이트를 통과해야 합니다.)"
+            )
 
     validate = SCRIPT_DIR / "validate.py"
     if not args.no_validate and not args.dry_run and validate.exists():

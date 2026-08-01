@@ -2,6 +2,25 @@
 
 이 파일은 multi-agent-starter (Antigravity flavor) orchestration 시스템의 주요 변경을 기록한다.
 
+## [0.5.0] - 2026-08-01
+
+### Fixed
+- **승인 게이트가 코드로 강제된다** — 종전엔 `workers_approved`·`max_worker_calls`가 순수 문서
+  규약이라 디스패처를 셸에서 직접 실행하면 무승인 호출이 그대로 나갔다. 판정 정본
+  `_shared/hooks/approval_gate.py`를 두고 `call_worker.sh` 진입부에서 집행한다. 거부 시 사유와
+  해소 방법이 함께 나오며, 우회는 `MULTIAGENT_SKIP_APPROVAL_GATE=1` 하나뿐(경고 남김). (INV14)
+- **디스패처가 어떤 실패 경로에서도 유효 envelope를 낸다** — `run_backend`의 `die`가 명령치환
+  서브셸만 죽여, 폴백이 있으면 조용한 대체 실행, 없으면 호출부 jq 크래시로 끝나던 문제.
+  mcp/native primary를 건너뛴 사실은 `skipped_primary`로 남는다.
+- **codex 워커 sandbox 명시** — CLI 경로에 `--sandbox`가 없어 리뷰어조차 codex 기본값으로 돌던
+  문제. 구현 워커 `workspace-write` / 리뷰어 `read-only`로 차등하고 `cwd_policy: task_dir`로
+  작업 폴더 안에서 돌게 했다. `approval-policy`는 `never` — `codex exec`엔 승인 플래그가 없다(실측).
+- **문서 상호참조 정정** — `capability-profile.md`의 라우팅 2층 분리 근거 인용이 잘못돼 있었다.
+
+### Added
+- design-basis D11·D12·D13 — codex 안전 경계 / 게이트 기계적 강제 / 호스트 워크플로 엔진 미채택.
+- `_shared/hooks/approval_gate.py` — 워커 role 목록을 `backends.json`에서 읽어 워커 풀 변경에 자동 대응.
+
 ## [0.4.0] - 2026-07-17
 
 ### Merged

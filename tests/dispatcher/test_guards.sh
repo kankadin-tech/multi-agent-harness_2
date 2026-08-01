@@ -26,11 +26,13 @@ dispatch "$ROOT" nope "$ROOT/brief.txt"
 assert_eq "미정의 role → exit 2" 2 "$RC"
 
 # allowlist 밖 명령(rm) → 실행 안 됨(거부), stderr에 allowlist 언급.
-# 종료코드는 비0이면 충분(현재는 폴백 없는 die→빈 envelope 경로로 2가 나옴 = 알려진 러프엣지 T2,
-# 명령은 차단되고 stderr는 명확하므로 보안 영향 없음). 명령 차단 자체를 단언한다.
+# 구 러프엣지 T2(폴백 없는 die → 빈 envelope → 호출부 jq 크래시 exit 2)는 2026-08-01 종결:
+# 이제 모든 거부 경로가 유효 envelope를 낸다. 아래 두 단언이 그 회귀를 잠근다.
 dispatch "$ROOT" bad "$ROOT/brief.txt"
 assert_eq       "allowlist 위반 → exit 비0"  nonzero   "$([ "$RC" -ne 0 ] && echo nonzero || echo zero)"
 assert_contains "stderr에 allowlist"        allowlist "$ERR"
+assert_eq       "거부도 유효 envelope"        ok        "$(printf '%s' "$OUT" | jq -e . >/dev/null 2>&1 && echo ok || echo broken)"
+assert_eq       "거부 envelope status=error" error     "$(printf '%s' "$OUT" | jq -r '.status' 2>/dev/null)"
 
 rm -rf "$ROOT"
 finish

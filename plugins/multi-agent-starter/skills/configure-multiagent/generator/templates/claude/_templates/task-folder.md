@@ -95,9 +95,9 @@ wc -w "$ROOT/tasks/$TASK/workers/$ROLE/brief.md"   # 영문 단어수 ≤ 240
 - **claude-main**: Claude Code 내장 **Task tool (sub-agent)** 호출
   - `subagent_type`: `claude-main` (`.claude/agents/claude-main.md`에 정의)
   - `prompt`: brief.md 내용 그대로
-  - `model`: agent frontmatter `model: opus` 자동 적용
+  - `model`: agent frontmatter의 명시 핀 `model: claude-fable-5` 자동 적용 (별칭 금지 — routing.md 모델 정책)
   - 응답 텍스트를 Orchestrator가 받아 `result.md`에 기록
-- **gemini**: `_shared/backends.json`의 `gemini`(백엔드 = Antigravity `agy` CLI, 기본 `gemini-3.1-pro-high`). 디스패처 `bash _shared/adapters/call_worker.sh gemini <brief-file>` → JSON envelope. Orchestrator가 envelope의 stdout을 `result.md`에 기록. (옛 `mcp__gemini-pro__*` 브리지 폐기)
+- **gemini**: `_shared/backends.json`의 `gemini`(백엔드 = Antigravity `agy` CLI, 기본 `gemini-3.6-flash-high`). 디스패처 `bash _shared/adapters/call_worker.sh gemini <brief-file>` → JSON envelope. Orchestrator가 envelope의 stdout을 `result.md`에 기록. (옛 `mcp__gemini-pro__*` 브리지 폐기)
 - **codex-main / codex-critic**: `mcp__codex__codex` MCP 도구 호출
   - `prompt`: brief.md 내용 그대로
   - `cwd`:
@@ -107,7 +107,8 @@ wc -w "$ROOT/tasks/$TASK/workers/$ROLE/brief.md"   # 영문 단어수 ≤ 240
   - `sandbox`:
     - codex-main: `workspace-write` 고정 (cwd 내부만 쓰기 가능. 외부 repo 쓰기는 cwd를 `target_repo`로 변경한 경우에만 해당 패턴 내 쓰기)
     - codex-critic: `read-only` 고정
-  - `approval-policy`: `on-failure` 권장
+  - `approval-policy`: `never` 고정 (헤드리스라 승인 프롬프트에 답할 채널이 없다 — 안전 경계는 sandbox+cwd. D13)
+- **모든 워커 호출은 승인 게이트를 통과해야 한다** — `task.md`의 `workers_approved`에 없으면 `_shared/hooks/approval_gate.py`가 실제로 차단한다(문서 규약이 아니라 코드. D14)
 - **codex-main 외부 repo 쓰기 조건**: `target_repo` + `write_scope` 명시 + `task.md`의 `workers_approved`에 외부 쓰기 승인 기록 + `log.md`에 `[APPROVAL]` 별도 기록 (4개 모두 충족 시에만 cwd를 `target_repo`로 변경)
 - 위 조건 미충족 시 cwd는 작업 폴더로 두고, codex-main이 `tasks/<task>/artifacts/`에 diff·patch 형태로 산출. 사용자가 직접 적용
 

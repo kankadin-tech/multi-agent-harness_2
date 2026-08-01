@@ -99,6 +99,8 @@ def run_checks(target: Path, flavor: str) -> list[tuple[bool, str]]:
         "_shared/check-invariants.sh",
         # 볼트 브리지(D9) — generator가 3 flavor 전부에 배포 보장. vault.config는 scaffold-once.
         "_shared/adapters/export_to_vault.sh", "_shared/vault-bridge.md", "_shared/vault.config",
+        # 승인 게이트(D14) — 판정 정본. 3 flavor 전부에 배포(배선은 flavor별로 다름).
+        "_shared/hooks/approval_gate.py",
         "_templates/log.md", "_templates/context.md", "_templates/worker-brief.md",
     ] + cfg["extra_files"]
     missing = [r for r in required if not (target / r).is_file()]
@@ -204,6 +206,17 @@ def run_checks(target: Path, flavor: str) -> list[tuple[bool, str]]:
     # 맡기는 것이라 최상위 보장이 안 된다. 모델 버전은 하드코딩하지 않는다 — 형태만 본다.
     c15_ok, c15_why = _claude_pin_ok(target, read(target, "_shared/backends.json"))
     check(c15_ok, f"C15 claude 워커 최상위 모델 명시 핀 {('— ' + c15_why) if not c15_ok else '(OK)'}")
+
+    # C16 승인 게이트가 코드로 강제되는지 (D14). 판정기 존재 + 디스패처가 실제로 호출하는지까지.
+    # 판정기만 깔리고 호출부가 없으면 게이트는 다시 문서 규약으로 되돌아간다.
+    gate = read(target, "_shared/hooks/approval_gate.py") or ""
+    dispatcher = read(target, "_shared/adapters/call_worker.sh") or ""
+    c16_missing = []
+    if "workers_approved" not in gate:
+        c16_missing.append("판정기가 workers_approved를 보지 않음")
+    if "approval_gate.py" not in dispatcher:
+        c16_missing.append("디스패처가 게이트를 호출하지 않음")
+    check(not c16_missing, f"C16 승인 게이트 기계적 강제 ({c16_missing[0] if c16_missing else 'OK'})")
 
     return results
 

@@ -19,6 +19,7 @@
 | INV11 | 카파시 4원칙(D7): `AGENTS.md`에 "Operating Principles" 섹션 존재, `_templates/worker-brief.md`에 "Worker 행동 규약" 고정 블록 존재, 블록 안에 사용자질문 지시(질문/ask) 없음, `worker-result.md` 체크리스트에 표면화 항목 존재 |
 | INV12 | 지시-데이터 분리(D8a): Instruction-data separation 규칙이 `AGENTS.md` Verification 섹션에 존재 |
 | INV13 | 호출 예산(D8d): `max_worker_calls`가 `_templates/task.md`와 `_shared/approval-policy.md` 양쪽에 존재 |
+| INV14 | 승인 게이트가 코드로 강제됨(D12): `_shared/hooks/approval_gate.py`가 `workers_approved`를 판정하고 `_shared/adapters/call_worker.sh`가 그 판정기를 호출 |
 
 ## 자가 점검 실행기
 

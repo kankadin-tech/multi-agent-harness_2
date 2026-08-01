@@ -102,8 +102,14 @@ mat의 핵심 화면 요소인 "워커 한 줄 목적"이 실제 Objective가 �
 
 ## KI-4 — `init.py` update 모드가 `_shared/learnings.md` 로컬 누적분을 번들로 덮어씀
 
-- **상태**: 열림 (2026-07-04 발견)
+- **상태**: ✅ 종결 (2026-08-01, tasks/harness-integrity-fixes/)
 - **심각도**: 중간 — CLAUDE.md Task Lifecycle는 "시스템 일반 교훈 → `_shared/learnings.md`" 적재를 지시하지만, `init.py`의 보존 대상은 `PRESERVE_DIRS = ("tasks", "_local")`뿐이라 update 재실행 시 로컬 append 교훈이 번들본으로 교체·소실된다.
 - **재현**: 설치본 `_shared/learnings.md`에 항목 append → `init.py --target <같은 폴더> --yes` (update 모드) → append 항목 소실.
-- **완화**: 교훈을 `_local/learnings.md`에 병행 기록, 또는 재설치 전 diff 백업.
-- **수정 후보**: `init.py`가 update 모드에서 `learnings.md`를 3-way 병합하거나, 로컬 항목 마커(`<!-- local -->` 이하)를 보존하는 로직 추가.
+- **완화**(종결 전): 교훈을 `_local/learnings.md`에 병행 기록, 또는 재설치 전 diff 백업.
+
+### 종결 기록 (2026-08-01)
+
+- **적용**: 수정 후보(3-way 병합·마커 보존) 대신 **`PRESERVE_IF_EXISTS`에 편입**했다. `learnings.md`는 번들이 *씨앗*을 제공하고 그 뒤로는 사용자가 append하는 누적물이므로, `vault.config`와 같은 scaffold-once 의미가 정확하다. 병합 로직은 이 의미에 비해 과설계이며 충돌 처리라는 새 실패 모드를 만든다.
+- **부수 효과(수용)**: 기존 설치본은 번들 `learnings.md` 갱신을 더 이상 받지 않는다. 번들본은 씨앗일 뿐이라 손실이 아니며, 새 설치는 최신 씨앗을 받는다.
+- **회귀보호**: `tests/test_update_preserve.py`에 "로컬 누적 보존" 단언 추가(같은 커밋에서 `.claude/settings.json` scaffold-once 단언도 함께).
+- **실측**: 이 종결 직전 확인 결과, 2026-08-01 설치본의 `learnings.md`가 번들본과 바이트 동일 — 즉 KI-4는 이론이 아니라 실제로 발동하고 있었다.

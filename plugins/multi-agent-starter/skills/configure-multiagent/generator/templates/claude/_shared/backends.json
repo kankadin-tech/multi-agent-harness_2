@@ -15,17 +15,18 @@
       "call_type": "mcp",
       "mcp": {
         "tool": "mcp__codex__codex",
-        "args_template": { "prompt": "@brief_content", "sandbox": "read-only", "approval-policy": "never" }
+        "args_template": { "prompt": "@brief_content", "sandbox": "workspace-write", "approval-policy": "never" }
       },
       "brief_mode": "content",
+      "cwd_policy": "task_dir",
       "approval_class": "worker",
       "result_capture": "tool-return",
       "timeout": 300,
       "fallbacks": [
         {
           "model": "codex-default", "call_type": "cli", "brief_mode": "stdin", "timeout": 300,
-          "approval_class": "worker", "result_capture": "envelope",
-          "cli": { "command": "codex", "args_template": ["exec", "-"],
+          "approval_class": "worker", "result_capture": "envelope", "cwd_policy": "task_dir",
+          "cli": { "command": "codex", "args_template": ["exec", "--sandbox", "workspace-write", "-"],
                    "non_interactive": { "stdin": "brief", "no_tty": true, "on_permission_prompt": "fail" } }
         }
       ]
@@ -38,9 +39,18 @@
         "args_template": { "prompt": "@brief_content", "sandbox": "read-only", "approval-policy": "never" }
       },
       "brief_mode": "content",
+      "cwd_policy": "task_dir",
       "approval_class": "worker",
       "result_capture": "tool-return",
-      "timeout": 300
+      "timeout": 300,
+      "fallbacks": [
+        {
+          "model": "codex-default", "call_type": "cli", "brief_mode": "stdin", "timeout": 300,
+          "approval_class": "worker", "result_capture": "envelope", "cwd_policy": "task_dir",
+          "cli": { "command": "codex", "args_template": ["exec", "--sandbox", "read-only", "-"],
+                   "non_interactive": { "stdin": "brief", "no_tty": true, "on_permission_prompt": "fail" } }
+        }
+      ]
     },
     "gemini": {
       "model": "gemini-3.6-flash-high",

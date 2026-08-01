@@ -1,0 +1,16 @@
+{
+  "_comment": "MultiAgent 승인 게이트 배선 (design-basis D14). 판정 정본은 _shared/hooks/approval_gate.py 이고 이 파일은 배선일 뿐이다. 게이트 스크립트나 python3이 없으면 exit 0으로 통과시킨다 — 배선이 깨졌을 때 모든 도구 호출을 막아버리는 것이 무승인 호출보다 나쁘기 때문. 워커 호출이 아닌 도구는 스크립트가 조용히 통과시킨다.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|Agent|Task|^mcp__codex__",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh -c 'g=\"${CLAUDE_PROJECT_DIR:-.}/_shared/hooks/approval_gate.py\"; [ -f \"$g\" ] || exit 0; command -v python3 >/dev/null 2>&1 || exit 0; python3 \"$g\" --hook'"
+          }
+        ]
+      }
+    ]
+  }
+}

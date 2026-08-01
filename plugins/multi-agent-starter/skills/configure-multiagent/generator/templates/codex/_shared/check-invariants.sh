@@ -79,12 +79,16 @@ done
 [ "$inv8_ok" = 1 ] && pass "INV8 토폴로지 4패턴 존재" \
                    || fail "INV8 토폴로지 4패턴 누락"
 
-# INV9 — gemini 백엔드: backends.json agy·pro-high 둘 다 존재
-if grep -q '"command": "agy"' "$ROOT/_shared/backends.json" && \
-   grep -q 'gemini-3.1-pro-high' "$ROOT/_shared/backends.json"; then
-  pass "INV9 gemini 백엔드 agy·pro-high 존재"
+# INV9 — gemini 백엔드 = agy CLI, 핀은 backends.json이 정본이고 문서가 그 값을 따라야 한다.
+# 모델명을 굽지 않는다 — 세대가 바뀔 때마다 이 검사가 썩던 자리(2026-08-01).
+inv9_pin=$(sed -n '/"gemini": {/,/^    }/p' "$ROOT/_shared/backends.json" 2>/dev/null \
+  | sed -n 's/.*"model": "\(gemini-[^"]*\)".*/\1/p' | head -1)
+if grep -q '"command": "agy"' "$ROOT/_shared/backends.json" && [ -n "$inv9_pin" ] \
+   && grep -q "$inv9_pin" "$ROOT/_shared/routing.md" \
+   && ! grep -q 'gemini-3\.1-pro-high' "$ROOT/_shared/backends.json"; then
+  pass "INV9 gemini 백엔드 agy + 핀($inv9_pin) 문서 일치"
 else
-  fail "INV9 gemini 백엔드 agy·pro-high 누락"
+  fail "INV9 gemini 백엔드 agy·핀 일치 실패 (핀=${inv9_pin:-읽기실패})"
 fi
 
 # INV10 — 옛 프록시 활성호출 없어야 PASS (폐기문맥 제외)
@@ -125,6 +129,14 @@ if grep -q 'max_worker_calls' "$ROOT/_templates/task.md" && \
   pass "INV13 max_worker_calls 양쪽 존재"
 else
   fail "INV13 max_worker_calls 누락 (D8d)"
+fi
+
+# INV14 — 승인 게이트가 코드로 강제됨 (2026-08-01, D12)
+if grep -q 'workers_approved' "$ROOT/_shared/hooks/approval_gate.py" 2>/dev/null \
+   && grep -q 'approval_gate\.py' "$ROOT/_shared/adapters/call_worker.sh" 2>/dev/null; then
+  pass "INV14 승인 게이트 기계적 강제"
+else
+  fail "INV14 승인 게이트가 코드로 강제되지 않음"
 fi
 
 echo "----"

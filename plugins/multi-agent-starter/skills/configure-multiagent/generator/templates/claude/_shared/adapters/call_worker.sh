@@ -44,6 +44,17 @@ BRIEF="$(cd "$(dirname -- "$BRIEF")" && pwd)/$(basename -- "$BRIEF")"
 rec="$(jq -c --arg r "$ROLE" '.workers[$r] // empty' "$BACKENDS")"
 [ -n "$rec" ] || die "role 미정의: $ROLE" 2
 
+# ── 승인 게이트(기계적 강제) ──
+# 종전엔 workers_approved·max_worker_calls가 문서 규약뿐이라 셸에서 직접 실행하면
+# 무승인 호출이 그대로 나갔다. 판정 정본은 _shared/hooks/approval_gate.py.
+GATE="$ROOT/_shared/hooks/approval_gate.py"
+if [ "${MULTIAGENT_SKIP_APPROVAL_GATE:-0}" = "1" ]; then
+  echo "call_worker: 경고 — 승인 게이트를 우회했습니다(MULTIAGENT_SKIP_APPROVAL_GATE=1)." >&2
+elif [ -f "$GATE" ] && command -v python3 >/dev/null 2>&1; then
+  grc=0; python3 "$GATE" --role "$ROLE" --brief "$BRIEF" >&2 || grc=$?
+  [ "$grc" -eq 0 ] || die "승인 게이트가 이 호출을 거부했습니다(사유는 위)." 9
+fi
+
 # 폴백 가용성 사전 점검(경고만): primary가 죽고 나서야 폴백 불가를 아는 것을 방지
 while IFS= read -r _fe; do
   [ -n "$_fe" ] && [ -z "${!_fe:-}" ] && \
@@ -52,15 +63,41 @@ done < <(jq -r '.fallbacks[]?.api.required_env[]? // empty' <<<"$rec")
 
 redact() { sed -E 's/[A-Za-z0-9_-]{32,}/[REDACTED]/g'; }
 
+# 실패도 반드시 유효한 envelope로 낸다 — run_backend는 어떤 경로로 빠져나가도
+# stdout에 파싱 가능한 JSON을 남겨야 한다(호출부가 --argjson으로 받으므로 빈 문자열이면 크래시).
+err_envelope() {  # err_envelope <exit_code> <backend> <model> <msg>
+  echo "call_worker: $4" >&2   # 사람이 보는 신호도 유지(구 die 동작). envelope는 기계용.
+  jq -n --argjson exit "$1" --arg backend "$2" --arg model "$3" --arg msg "$4" \
+    '{status:"error", exit_code:$exit, backend:$backend, model:$model,
+      duration_s:0, stdout:"", stderr_sanitized:$msg}'
+}
+
+# brief 경로에서 작업 폴더 유도: tasks/<task>/workers/<role>/brief.md → tasks/<task>
+# 못 찾으면 ROOT(종전 동작)로 폴백.
+task_dir_from_brief() {
+  local d; d="$(dirname -- "$BRIEF")"
+  while [ "$d" != "/" ]; do
+    if [ "$(basename -- "$(dirname -- "$d")")" = "tasks" ]; then printf '%s' "$d"; return 0; fi
+    d="$(dirname -- "$d")"
+  done
+  printf '%s' "$ROOT"
+}
+
 # 단일 backend 실행 → envelope(JSON)을 stdout, exit code 반환
 run_backend() {
   local spec="$1" ctype bmode tmo cwdp model wd out err errd rc start dur
   ctype="$(jq -r '.call_type' <<<"$spec")"
   model="$(jq -r '.model // "?"' <<<"$spec")"
   case "$ctype" in
-    native|mcp) die "native/mcp는 오케스트레이터 직접 호출(디스패처 비경유)" 3 ;;
+    # 디스패처는 bash라 MCP 도구·호스트 서브에이전트를 실행할 수 없다. die로 죽이면
+    # 명령치환 서브셸만 죽어 빈 문자열이 남고 호출부 jq가 크래시했다. 건너뜀을
+    # envelope에 남기고 3을 반환해 cli/api 폴백으로 이어지게 한다.
+    native|mcp)
+      err_envelope 3 "$ctype" "$model" \
+        "call_type=$ctype는 디스패처가 실행하지 않는다(오케스트레이터가 직접 호출). 이 항목은 건너뛴다."
+      return 3 ;;
     cli|api) ;;
-    *) die "잘못된 call_type: $ctype" 7 ;;
+    *) err_envelope 7 "$ctype" "$model" "잘못된 call_type: $ctype"; return 7 ;;
   esac
   bmode="$(jq -r '.brief_mode // "content"' <<<"$spec")"
   tmo="$(jq -r '.timeout // 300' <<<"$spec")"
@@ -69,6 +106,7 @@ run_backend() {
   case "$cwdp" in
     isolated_tmp) wd="$(mktmpd)";;
     target)       wd="${TARGET_REPO:-$ROOT}";;
+    task_dir)     wd="$(task_dir_from_brief)";;
     *)            wd="$ROOT";;
   esac
 
@@ -76,7 +114,8 @@ run_backend() {
   if [ "$ctype" = "cli" ]; then
     local command_bin args_json a
     command_bin="$(jq -r '.cli.command' <<<"$spec")"
-    case "$command_bin" in agy|codex|claude) ;; *) die "command allowlist 위반: $command_bin" 7;; esac
+    case "$command_bin" in agy|codex|claude) ;;
+      *) err_envelope 7 "$ctype" "$model" "command allowlist 위반: $command_bin"; return 7;; esac
     cmd+=("$command_bin")
     args_json="$(jq -r '.cli.args_template[]' <<<"$spec")"   # jq 실패 시 set -e 트리거
     while IFS= read -r a; do
@@ -96,15 +135,21 @@ run_backend() {
         done
         cmd=("${_nc[@]}")
       elif ! command -v git >/dev/null 2>&1; then
-        die "codex 워커는 git이 필요합니다. git 설치 후 재시도하거나, 위험을 감수하면 MULTIAGENT_CODEX_SKIP_GIT=1 로 우회하세요." 8
+        err_envelope 8 "$ctype" "$model" \
+          "codex 워커는 git이 필요합니다. git 설치 후 재시도하거나, 위험을 감수하면 MULTIAGENT_CODEX_SKIP_GIT=1 로 우회하세요."
+        return 8
       fi
     fi
   else
     local ref reqenv brief_pass
     ref="$(jq -r '.api.ref' <<<"$spec")"
-    case "$ref" in adapters/*) ;; *) die "api.ref는 adapters/ 내부만" 7;; esac
-    case "$ref" in *..*) die "api.ref에 '..' 금지" 7;; esac
-    [ -f "$ROOT/_shared/$ref" ] || die "api 스크립트 없음: $ref" 4
+    case "$ref" in adapters/*) ;;
+      *) err_envelope 7 "$ctype" "$model" "api.ref는 adapters/ 내부만"; return 7;; esac
+    case "$ref" in *..*)
+      err_envelope 7 "$ctype" "$model" "api.ref에 '..' 금지"; return 7;; esac
+    if [ ! -f "$ROOT/_shared/$ref" ]; then
+      err_envelope 4 "$ctype" "$model" "api 스크립트 없음: $ref"; return 4
+    fi
     while IFS= read -r reqenv; do
       [ -n "$reqenv" ] || continue
       if [ -z "${!reqenv:-}" ]; then
@@ -154,16 +199,26 @@ if [ "$prc" -eq 0 ]; then
   jq -n --argjson e "$env_primary" '$e + {fallback_used:false}'
   exit 0
 fi
+# primary가 mcp/native라 건너뛴 경우(3), 실제로 무엇이 실행됐는지 envelope에 남긴다 —
+# "설정과 다른 백엔드가 조용히 돌았다"를 호출자가 알 수 있어야 한다.
+prim_note='{}'
+[ "$prc" -eq 3 ] && prim_note="$(jq -n --arg t "$(jq -r '.call_type' <<<"$rec")" '{skipped_primary:$t}')"
+
 nf="$(jq '.fallbacks | length' <<<"$rec")"
 env_fb=""; i=0
 while [ "$i" -lt "${nf:-0}" ]; do
   fb="$(jq -c --argjson i "$i" '.fallbacks[$i]' <<<"$rec")"
   frc=0; env_fb="$(run_backend "$fb")" || frc=$?
   if [ "$frc" -eq 0 ]; then
-    jq -n --argjson e "$env_fb" '$e + {fallback_used:true}'
+    jq -n --argjson e "$env_fb" --argjson n "$prim_note" '$e + {fallback_used:true} + $n'
     exit 0
   fi
   i=$((i+1))
 done
-jq -n --argjson e "${env_fb:-$env_primary}" '$e + {fallback_used:true}'
+# 전부 실패 — 어떤 경로로 와도 유효 envelope를 낸다(빈 문자열이면 jq가 크래시하던 자리).
+final="${env_fb:-$env_primary}"
+[ -n "$final" ] || final="$(err_envelope 1 "none" "?" "백엔드를 실행하지 못했고 envelope도 없음")"
+fb_used=false; [ -n "$env_fb" ] && fb_used=true
+jq -n --argjson e "$final" --argjson fb "$fb_used" --argjson n "$prim_note" \
+   '$e + {fallback_used:$fb} + $n'
 exit 1

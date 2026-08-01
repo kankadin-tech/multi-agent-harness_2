@@ -76,9 +76,25 @@ expect_any "INV8" "worktree/백그라운드 금지 (orchestrator-rules.md)" \
   'worktree|배경|백그라운드|background session' \
   "$ROOT/_shared/orchestrator-rules.md"
 
-# INV9: gemini 백엔드 agy cli + pro-high (backends.json)
+# INV9: gemini 백엔드 = agy cli, 그리고 backends.json의 핀이 문서 사본들과 일치
+# 모델명을 스크립트에 굽지 않는다 — 세대가 바뀔 때마다 이 검사가 썩던 자리(2026-08-01).
+# backends.json이 정본이고, 나머지는 그 값을 따라와야 한다는 *관계*를 검사한다.
 expect_any "INV9" "backends.json command agy" '"command": "agy"' "$ROOT/_shared/backends.json"
-expect_any "INV9" "backends.json gemini-3.1-pro-high" 'gemini-3.1-pro-high' "$ROOT/_shared/backends.json"
+INV9_PIN=$(sed -n '/"gemini": {/,/^    }/p' "$ROOT/_shared/backends.json" 2>/dev/null \
+  | sed -n 's/.*"model": "\(gemini-[^"]*\)".*/\1/p' | head -1)
+if [ -z "$INV9_PIN" ]; then
+  fail "INV9 backends.json에서 gemini 모델 핀을 읽지 못함"
+else
+  expect_all "INV9" "gemini 핀($INV9_PIN)이 routing.md·task-folder.md와 일치" "$INV9_PIN" \
+    "$ROOT/_shared/routing.md" "$ROOT/_templates/task-folder.md"
+  # 폐기 세대가 활성 기본값으로 되살아나지 않았는지(잔여 언급은 '구세대'/'폐기' 문맥에서만 허용)
+  INV9_STALE=$(grep -nE 'gemini-3\.1-pro-high' "$ROOT/_shared/backends.json" 2>/dev/null)
+  if [ -z "$INV9_STALE" ]; then pass "INV9 backends.json에 구세대 핀 잔존 없음"; else fail "INV9 backends.json에 구세대 핀 잔존"; fi
+fi
+
+# INV15: 승인 게이트가 문서 규약이 아니라 코드로 강제됨 (2026-08-01, D14)
+expect_any "INV15" "승인 게이트 판정기 존재" 'workers_approved' "$ROOT/_shared/hooks/approval_gate.py"
+expect_any "INV15" "디스패처가 게이트를 호출" 'approval_gate\.py' "$ROOT/_shared/adapters/call_worker.sh"
 
 # INV10: 폐기 브리지 호출형 mcp__gemini__gemini_* 활성호출 없어야
 expect_absent "INV10" "폐기 브리지 호출형 mcp__gemini__gemini_* 없음" \

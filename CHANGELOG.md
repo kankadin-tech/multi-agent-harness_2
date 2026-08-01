@@ -5,6 +5,39 @@
 (정본: `generator/templates/{claude,codex}/CHANGELOG.md`)를 참조한다.
 형식은 [Keep a Changelog](https://keepachangelog.com/), 버전은 [Semantic Versioning](https://semver.org/lang/ko/)을 따른다.
 
+## [3.7.0] - 2026-08-01
+
+### Fixed
+- **승인 게이트가 코드로 강제된다** — 종전엔 `workers_approved`·`max_worker_calls`가 순수 문서
+  규약이라 디스패처를 셸에서 직접 실행하면 무승인 호출이 그대로 나갔다(감사에서 기술적 강제 0 확인).
+  판정 정본 `_shared/hooks/approval_gate.py`를 3 flavor 전부에 배포하고, `call_worker.sh` 진입부와
+  claude flavor PreToolUse 훅(`.claude/settings.json`) 두 곳에서 집행한다. (D14 / INV15·INV14)
+- **디스패처가 어떤 실패 경로에서도 유효 envelope를 낸다** — `run_backend`의 `die`가 명령치환
+  서브셸만 죽여, 폴백이 있으면 *조용한 대체 실행*, 없으면 호출부 jq 크래시(exit 2, envelope 없음)로
+  끝나던 문제. 전 거부 경로를 `err_envelope`로 전환하고 stderr 신호는 유지했다. mcp/native primary를
+  건너뛴 사실은 `skipped_primary`로 남는다. 회귀보호 = `tests/dispatcher/test_mcp_skip.sh`.
+- **codex 워커의 sandbox 모순 해소** — `routing.md`는 codex-main에 `workspace-write` 고정이라
+  기술했는데 `backends.json`은 `read-only`였다(쓰기를 전제한 `write_scope` 4조건 체계와 충돌).
+  `workspace-write`로 통일하고 critic만 `read-only`로 차등, CLI 경로에도 `--sandbox`를 명시했다.
+  `approval-policy`는 `never`로 확정 — `codex exec`엔 승인 플래그가 없다(실측). `cwd_policy: task_dir`
+  신설로 cwd가 문서대로 `tasks/<task>/`가 된다. (D13)
+- **INV9가 모델 세대에 썩지 않는다** — 검사가 `gemini-3.1-pro-high`를 하드코딩해 핀 갱신 후
+  FAIL 상태로 배포돼 있었다. 이제 backends.json의 핀을 읽어 문서 사본과의 *일치*를 검사한다.
+- **KI-4 종결** — `init.py` update가 `_shared/learnings.md` 로컬 누적을 덮어쓰던 문제.
+  `PRESERVE_IF_EXISTS`에 편입(scaffold-once). `.claude/settings.json`도 같은 취급.
+- **문서 상호참조 정정** — `capability-profile.md`·CHANGELOG 1.3.0이 라우팅 2층 분리의 근거를
+  "D9"(knot 배포)로 잘못 인용했다. 실제는 D12(claude) / D10(codex·antigravity).
+
+### Added
+- `_shared/hooks/approval_gate.py` — 승인 판정 단일 정본. CLI 모드와 PreToolUse 훅 모드 겸용.
+  워커 role 목록을 `backends.json`에서 읽어 flavor별 워커 풀 차이를 자동 반영한다.
+- design-basis **D13**(codex 안전 경계) · **D14**(게이트 기계적 강제) · **D15**(호스트 워크플로
+  엔진 미채택 — file-as-memory·워커 풀 감사와 충돌하므로 전면 재감사 대상). flavor별 번호는 D11~D13.
+- 권위 우선순위에 **사실 축** 추가 — 실행 파라미터의 정본은 `backends.json`이고 문서 서술은 사본.
+  하위 문서가 상위 결정문서를 "무효"라 선언하던 역전(D4↔routing.md)의 구조적 원인이었다.
+- validate **C16**(게이트 기계적 강제), `tests/dispatcher/test_mcp_skip.sh`,
+  `test_update_preserve.py`·`test_generate.py`에 게이트·보존 단언.
+
 ## [3.6.0] - 2026-07-26
 
 ### Changed

@@ -43,6 +43,12 @@
 
 - **D10 라우팅 2층 분리** = `routing.md`(안정층: 작업 유형→능력 슬롯 strategist·engineer·computer-use·reviewer·multimodal)와 `_shared/capability-profile.md`(가변층: 슬롯→담당 배정, 근거·날짜 필수, 이력 append-only). 트리의 담당명 병기는 편의 사본 — 프로필이 정본. 근거: 모델별 강점 우열은 신모델 출시마다 바뀌는 *환경 소유 사실*(D6 동방향)이라 시스템 파일에 구우면 세대마다 개정 부채가 된다. 초기 배정 근거 = 2026-07-13 외부 리뷰 10건 종합 판정(Anthropic vs OpenAI 최신 플래그십): 설계·UI/UX 디자인·전략·글쓰기 = Claude 우위, 대규모 구현·테스트·브라우저 조작·비용·속도·토큰 효율 = GPT 우위로 수렴 — computer-use 슬롯 신설 및 이 flavor의 strategist 게이트(claude-critic) 동근거. 갱신은 판정 자료 확보 시 프로필만(절차는 프로필 파일이 정본). 검증: validate C1(프로필 존재)+C5b(routing→profile 참조, 슬롯 5종). (2026-07-13)
 
+- **D11 codex 워커의 안전 경계 = sandbox + cwd (승인정책 아님)** = codex 계열 워커는 `sandbox`를 명시한다(구현 워커 `workspace-write`, 리뷰어 `read-only`) + `cwd_policy: task_dir`. 근거: (a) 워커는 헤드리스라 승인 프롬프트에 답할 채널이 없고 `codex exec`에 승인 플래그 자체가 없다(2026-08-01 실측) — 승인정책은 안전장치가 아니며 실제 경계는 sandbox(OS 강제)+cwd다. (b) 종전 CLI 워커엔 `--sandbox` 플래그가 없어 리뷰어조차 codex 기본값으로 돌았다. (c) cwd가 하네스 루트로 잡혀 "작업 폴더 안에서 산출물 작성"이라는 문서와 어긋났다. (2026-08-01)
+
+- **D12 승인 게이트의 기계적 강제** = `workers_approved`·`max_worker_calls`를 문서 규약에서 **코드 판정**으로 승격. 판정 정본 = `_shared/hooks/approval_gate.py`, 진입점 = `call_worker.sh` 진입부(셸에서 직접 실행해도 막힌다). 근거: 2026-08-01 감사에서 게이트의 기술적 강제가 0으로 확인됐다 — 디스패처는 `task.md`를 읽지도 않았다. 예산 초과도 차단하되 해소 경로는 `task.md`의 `max_worker_calls`를 올리는 *감사 남는 편집*이라, 작업을 죽이지 않고 사용자 결정을 요구한다는 soft gate 취지는 보존된다. 우회는 `MULTIAGENT_SKIP_APPROVAL_GATE=1` 하나뿐(경고 남김). 회귀보호 = INV14. (2026-08-01)
+
+- **D13 호스트 네이티브 워크플로 엔진 미채택** = 결정적 fan-out/fan-in·구조화 출력을 제공하는 호스트 기능이 있으나 채택하지 않는다. 근거: 워크플로 스크립트 본문은 파일시스템 접근이 없어 file-as-memory를 표현할 수 없고, 스크립트가 부리는 호스트 서브에이전트로 산출물을 만들면 "산출물 위임은 워커 풀 경유" 제한을 우회해 brief·result 기록과 감사 로그가 빈다. 채택하려면 워커 풀 개념 재정의가 필요하므로 전면 재감사 대상. 구조화 출력 개념만 빌려오는 부분 채택은 열려 있다. (2026-08-01)
+
 ## 4. 불변식
 
 구체 항목과 점검 명령은 `_shared/system-invariants.md`에 둔다.
