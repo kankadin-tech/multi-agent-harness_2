@@ -34,6 +34,8 @@ Orchestrator (Claude Code session, internal reasoning)
 - `codex-main`·`codex-critic`·`gemini`는 별개 폴백 체인을 가진다 — `_shared/backends.json`의 `fallbacks` 참조.
 
 > **설치 시 필수 단계**: 최상위 모델을 핀하는 구성이므로, 하네스를 설치할 때 **`safety-guide` 스킬을 반드시 함께 실행**해 그 환경·대상 repo에 맞는 마찰 완화 가이드를 세팅한다(상세: `configure-multiagent` 스킬 절차). 스킬이 없는 환경이면 그 사실을 사용자에게 보고한다.
+>
+> 세팅됐다면 그 처방은 관례 경로 **`docs/안전장치-마찰-완화-가이드.md`** 에 있다 — 오탐이 반복되면 그 파일을 읽는다. 없으면 이 repo엔 특화 처방이 없다는 뜻이고 전역 원칙만 적용된다. (이 포인터를 템플릿에 두는 이유: 설치본 `CLAUDE.md`는 `init.py`가 재생성하므로 손으로 추가한 줄은 재설치 때 사라진다.)
 
 ## 운영 원칙 (Operating Principles)
 
