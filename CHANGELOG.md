@@ -5,6 +5,28 @@
 (정본: `generator/templates/{claude,codex}/CHANGELOG.md`)를 참조한다.
 형식은 [Keep a Changelog](https://keepachangelog.com/), 버전은 [Semantic Versioning](https://semver.org/lang/ko/)을 따른다.
 
+## [3.8.0] - 2026-08-09
+
+### Added
+- **task 완료 시 볼트 자동 export (3 flavor 공통)** — 지침(`CLAUDE.md`/`AGENTS.md`) Task Lifecycle에
+  10번 항목을 신설했다. task가 `done`이 되면 `_shared/adapters/export_to_vault.sh <task>`를 실행하고
+  성공 시 `log.md`에 `[DECISION] 볼트 export: <inbox 경로>`를 남긴다. 볼트가 없거나 스크립트가 비0으로
+  끝나면 **건너뛰고 그 사실만 보고**한다(fail-open — export 실패가 task 완료를 막지 않는다).
+  종전엔 브리지 스크립트만 있고 트리거가 순수 수동이라, 볼트로 넘어가지 않은 산출물이 쌓였다.
+- **설치 절차에 goal 요금가드 배선 확인 단계(5-3)** — `configure-multiagent` 스킬이 설치 직후
+  `command -v coach`와 Stop 훅(`coach --hook`) 배선을 확인하고, 없으면 loadout guard 품목으로
+  안내한다. **전역 `~/.claude/settings.json`에 이미 배선돼 있으면 폴더별 재설치 불필요**임을 명시.
+  가드 자산의 정본은 loadout이므로 이 패키지는 자산을 배포하지 않고 확인 절차만 갖는다.
+
+### Changed
+- **claude flavor: strategist 슬롯의 기본이 "Orchestrator 직접 처리"로 승격** — claude-main 핀
+  (`claude-fable-5`)이 오케스트레이터와 동일 모델이라 호출해도 모델 다양성이 0이고, 얻는 것은
+  컨텍스트 격리 + 독립 2차 패스뿐이다. 그 둘이 실제로 필요할 때만 claude-main을 부르고 근거를
+  `task.md`에 남긴다(2026-08-09 사용자 결정). **워커 핀이 오케스트레이터와 동일한 동안의 조건부
+  판정**이며, 핀이 달라지면 `_shared/capability-profile.md`에서 재판정한다.
+  codex flavor(이미 직접 처리)·antigravity flavor(오케스트레이터가 Gemini라 claude-main이 실제
+  모델 다양성을 제공)는 변경 없음.
+
 ## [3.7.0] - 2026-08-01
 
 ### Fixed

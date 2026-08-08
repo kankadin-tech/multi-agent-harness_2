@@ -3,6 +3,24 @@
 이 파일은 MultiAgent orchestration 시스템의 주요 변경을 기록한다.
 형식은 [Keep a Changelog](https://keepachangelog.com/), 버전은 [Semantic Versioning](https://semver.org/lang/ko/)을 따른다.
 
+## [1.8.0] - 2026-08-09
+
+### Added
+- **task 완료 시 볼트 자동 export** — Task Lifecycle 10번 신설. task가 `done`이 되면
+  `_shared/adapters/export_to_vault.sh <task>`가 돌고, 성공 시 `log.md`에
+  `[DECISION] 볼트 export: <inbox 경로>`가 남는다. 볼트가 없거나 스크립트가 비0으로 끝나면
+  건너뛰고 그 사실만 사용자에게 보고한다 — **fail-open**이라 export 실패가 task 완료를 막지 않는다.
+  수동 호출(`/export`·직접 실행)은 재전송·배치(`--all`)·옵션(`--media`·`--domain`)용 보조 경로로
+  남는다. (`_shared/vault-bridge.md`)
+
+### Changed
+- **strategist 슬롯의 기본이 "Orchestrator 직접 처리"** — claude-main 워커 핀이 Orchestrator와
+  동일 모델인 동안, 이 워커 호출로 얻는 것은 모델 다양성이 아니라 컨텍스트 격리 + 독립 2차 패스뿐이다.
+  그래서 기획·설계·전략은 Orchestrator가 직접 처리하고, 위 두 값이 실제로 필요할 때만 claude-main을
+  호출하며 그 근거를 `task.md`에 남긴다(2026-08-09 결정). 핀이 달라지면 재판정한다.
+  `capability-profile.md`(정본) · `routing.md` 트리·최소 Worker Set · `CLAUDE.md` · `README.md` ·
+  `.claude/agents/claude-main.md` 동기화.
+
 ## [1.7.0] - 2026-08-01
 
 ### Fixed

@@ -14,7 +14,7 @@
 │
 ├── [strategist] 기획 · 설계 · 아키텍처 · 요구사항 · 전략 · UI/UX 디자인 방향
 │   · 문체가 중요한 글쓰기 · 까다로운 로직 설계 · 디버깅 원인 분석?
-│   └── claude-main
+│   └── Orchestrator 직접 (기본) — 컨텍스트 격리·독립 2차 패스 필요 시에만 claude-main
 │
 ├── [engineer] 대규모 구현 · 리팩토링 · 테스트 작성·실행 · diff · 로컬 CLI 검증 · 이미지 생성?
 │   └── codex-main
@@ -29,7 +29,7 @@
 │   └── gemini
 │
 └── 판단 어려움?
-    └── claude-main으로 시작 후 필요 시 추가
+    └── Orchestrator 직접 판단으로 시작 후 필요 시 워커 추가
 ```
 
 ## 복합 작업 우선순위
@@ -37,7 +37,7 @@
 한 작업이 여러 분기에 해당할 때:
 
 1. **선행 의존성 우선**: codex-critic은 리뷰 대상(보통 claude-main 결과)이 먼저 있어야 함 → 해당 산출물 뒤에 호출
-2. **Orchestrator 내부 추론 우선**: 별도 worker 호출 전에 orchestrator 자체 추론으로 해결 가능한지 먼저 판단. 그래도 부족할 때만 claude-main 호출 (claude-main도 비용·쿼터 대상)
+2. **Orchestrator 내부 추론 우선**: 별도 worker 호출 전에 orchestrator 자체 추론으로 해결 가능한지 먼저 판단. 그래도 부족할 때만 claude-main 호출 (claude-main도 비용·쿼터 대상). **strategist 슬롯은 이 원칙이 기본값으로 승격돼 있다** — 워커 핀이 Orchestrator와 동일 모델인 동안은 직접 처리가 기본이고, 컨텍스트 격리·독립 2차 패스가 필요할 때만 claude-main을 부른다 (배정 정본: `capability-profile.md`)
 3. **검증은 한 번만**: codex-critic은 작업당 1회 원칙. 재호출은 검증 실패 시만
 4. **gemini는 명시적 트리거 시만**: 멀티모달 또는 "제3자 시각의 검토 필요" 명시 없으면 호출 금지
 
@@ -65,7 +65,8 @@ decision tree로 "누구를" 고른 뒤, "어떻게 엮을지" 고른다. **단�
 ## Worker 역할 상세
 
 ### claude-main
-- **슬롯**: strategist
+- **슬롯**: strategist (**기본은 Orchestrator 직접 처리** — 아래 호출 조건 참조)
+- **호출 조건**: 워커 핀이 Orchestrator와 동일 모델인 동안 이 워커가 주는 값은 모델 다양성이 아니라 **컨텍스트 격리**(메인 컨텍스트를 더럽히지 않고 대용량 자료를 소화)와 **독립 2차 패스**(Orchestrator 결론을 백지에서 재도출)뿐이다. 둘 중 하나가 실제로 필요할 때만 호출하고, 호출 근거를 `task.md`에 남긴다. 그 외 strategist 작업은 Orchestrator가 직접 처리한다. 핀이 달라지면 `capability-profile.md`에서 재판정
 - **용도**: 기획, 요구사항 정의, 설계 문서, 사용자 스토리, 아키텍처, 전략 수립, UI/UX 디자인 방향, 문체가 중요한 글쓰기, 까다로운 로직 설계, 디버깅 원인 분석, (설계와 분리 곤란한) 핵심 구현
 - **결과물**: 코드 (구현·수정·diff), 설계 문서, 구조도, 의사결정 근거
 - **호출 명령**: Claude Code 내장 **Task tool (sub-agent)**
@@ -154,15 +155,16 @@ decision tree로 "누구를" 고른 뒤, "어떻게 엮을지" 고른다. **단�
 
 | 작업 유형 | 권장 최소 set |
 |----------|------------|
-| 문서/기획/전략만 | claude-main |
-| 설계 + 소규모 구현 | claude-main (설계·구현 일괄) |
-| 대규모 구현·테스트 | claude-main (설계) → codex-main (구현·테스트) |
+| 문서/기획/전략만 | Orchestrator 직접 |
+| 설계 + 소규모 구현 | Orchestrator 직접 (설계·구현 일괄) |
+| 대규모 구현·테스트 | Orchestrator (설계) → codex-main (구현·테스트) |
 | 브라우저 자동화 / 이미지 생성 | codex-main |
-| 구현 + 비평 | 생성 워커 → codex-critic → 반영 |
+| 구현 + 비평 | 생성 주체 → codex-critic → 반영 |
 | 대용량 문서 처리 | gemini |
-| 전체 검토 | claude-main → codex-critic |
+| 전체 검토 | Orchestrator (정리) → codex-critic |
 
 모든 worker를 기본 호출하지 말 것. 필요한 worker만 선택.
+위 표의 strategist 몫을 claude-main으로 올리는 것은 **컨텍스트 격리·독립 2차 패스가 필요할 때만**이다 (위 `claude-main` 호출 조건).
 
 ## Worker 추가 조건
 

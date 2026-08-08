@@ -19,9 +19,11 @@
 
 | flavor | 오케스트레이터 | 워커 풀 |
 |--------|----------------|---------|
-| `claude` | Claude Code 세션 | claude-main · codex-main · codex-critic · gemini |
+| `claude` | Claude Code 세션 | claude-main<sup>†</sup> · codex-main · codex-critic · gemini |
 | `codex`  | Codex 세션 | codex-main · claude-critic · gemini |
 | `antigravity` | Antigravity 세션 (Gemini 3.1 Pro High) | claude-main · codex-main · codex-critic (멀티모달은 오케스트레이터 직접) |
+
+<sup>†</sup> `claude` flavor에서는 claude-main 핀이 오케스트레이터와 같은 모델이라, strategist 작업의 기본은 **오케스트레이터 직접 처리**다 — claude-main은 컨텍스트 격리·독립 2차 패스가 필요할 때만 호출한다(배정 정본: `_shared/capability-profile.md`).
 
 생성되는 시스템에 포함되는 것:
 

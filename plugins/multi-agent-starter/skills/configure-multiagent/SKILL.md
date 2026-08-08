@@ -31,7 +31,16 @@ description: Use when the user wants to set up / scaffold / install a file-based
 5-2. **`safety-guide` 스킬 실행 (필수)** — 최상위 모델은 광범위한 안전장치를 갖고 있어, 그 오탐이 워커의 실제 실행 모델을 조용히 바꿀 수 있다. 설치 직후 **`safety-guide` 스킬을 실행**해 대상 환경에 맞는 마찰 완화 가이드를 세팅한다.
    - 그 스킬 자체의 판단 기준(§0 게이트)을 존중한다 — 스킬이 "이 repo는 스킵" 판정을 내리면 그 판정을 따르고, **판정 결과를 사용자에게 보고**한다(무시하고 강행하지 말 것).
    - 스킬이 설치돼 있지 않은 환경이면 "미설치라 건너뜀"을 명시적으로 보고한다. 가이드 본문을 손으로 창작하지 말 것.
-6. **knot·요금가드 안내(선택)** — 사용자가 knot 지식 vault나 goal 요금가드를 찾으면 알린다: 두 구성의 설치는 v3.0.0부터 **loadout 카탈로그**(https://github.com/netwaif/loadout) 담당이다("CLAUDE.md 구성 골라 담아줘"). `knot` 능동 스킬(save/ingest/query/lint)은 v3.1.0부터 knot 자체 플러그인이 배포한다(마켓플레이스에 `netwaif/knot` 추가). 가드 배선 자산(claude Stop 훅·codex 워처)도 v3.2.0부터 loadout guard 품목이 전부 제공한다(codex는 `--flavor codex`).
+5-3. **goal 요금가드 배선 확인 (필수)** — 하네스는 워커를 최상위 모델로 돌리므로 사용량이 몰린다. 설치 직후 가드가 실제로 걸려 있는지 확인한다:
+   ```bash
+   command -v coach                                        # ① coach 바이너리 존재?
+   grep -ls 'coach --hook' ~/.claude/settings.json "<대상폴더>/.claude/settings.json"  # ② Stop 훅 배선?
+   ```
+   - ②는 **전역 `~/.claude/settings.json` 또는 대상 폴더 `.claude/settings.json`** 둘 중 하나에 있으면 된다. **전역 배선이 이미 있으면 폴더별 재설치는 불필요**하다 — 중복 배선하지 말 것.
+   - 배선이 없으면 **loadout 카탈로그**(https://github.com/netwaif/loadout)의 **guard 품목**으로 설치한다(codex flavor는 `--flavor codex`로 워처를 `_shared/guard/`에 복사한다).
+   - loadout이 없는 환경이면 **그 사실과 전제**(usage-coach https://github.com/netwaif/usage-coach + codexbar)를 사용자에게 보고하고 넘어간다. **가이드 본문이나 훅을 손으로 창작하지 말 것** — 가드 자산의 정본은 loadout이다.
+   - 특성: **fail-open**(coach가 없거나 사용량 조회가 실패해도 작업을 죽이지 않는다), 런타임 스위치 `coach guard on|off|status`.
+6. **knot 안내(선택)** — 사용자가 knot 지식 vault를 찾으면 알린다: 설치는 v3.0.0부터 **loadout 카탈로그**(https://github.com/netwaif/loadout) 담당이다("CLAUDE.md 구성 골라 담아줘"). `knot` 능동 스킬(save/ingest/query/lint)은 v3.1.0부터 knot 자체 플러그인이 배포한다(마켓플레이스에 `netwaif/knot` 추가). goal 요금가드는 위 **5-3** 참조(가드 배선 자산도 v3.2.0부터 loadout guard 품목이 전부 제공한다).
 
 ## 동작 보장
 

@@ -109,6 +109,7 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
    - System-level lessons: `_shared/learnings.md`
    - Project-specific lessons: `_local/learnings.md` (not loaded unless explicitly requested)
    - When `learnings.md` exceeds 20KB, run a consolidation pass (see `_shared/learnings.md` header).
+10. **Vault export (automatic)**: once the task is `done`, run `_shared/adapters/export_to_vault.sh <task-name>` to export it to the vault. On success, append `[DECISION] 볼트 export: <inbox path>` to `log.md`. If the vault is missing or the script exits non-zero, **skip it and just report that fact to the user** — fail-open (a failed export must not block task completion). For manual re-runs and options (`--all`, `--dry-run`, `--media`, `--domain`), see `_shared/vault-bridge.md`.
 
 > When resuming an existing task, start with `_shared/orchestrator-rules.md` section 3 re-entry protocol, not step 1.
 

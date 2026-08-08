@@ -24,9 +24,10 @@ inbox → /inbox 트리아지 → raw → /ingest → wiki → graphify
 | 분석 | 볼트 `/ingest` | raw → wiki 페이지화 |
 | 연결 | 볼트 wiki/graphify | 양방향 링크·그래프 |
 
-## 사용법 (수동 트리거)
+## 사용법 (task 완료 시 자동 + 수동 보조)
 
-task가 `done`이 된 뒤 실행:
+task가 `done`이 되면 **지침 Lifecycle 10번이 자동으로** `<task>` 1건을 export한다.
+아래는 그 자동 경로가 쓰는 명령이자, 재전송·옵션 지정을 위한 수동 호출 형태다:
 
 ```bash
 _shared/adapters/export_to_vault.sh <task>                 # 1건
@@ -76,4 +77,6 @@ _shared/adapters/export_to_vault.sh <task> --media copy    # (b) 이미지·PDF 
 - **볼트 쓰기 범위**: `inbox/notes/_misc/`(+ `--media copy` 시 `inbox/papers/_misc/`)의 **신규 파일뿐**.
   기존 파일·다른 폴더·볼트 스킬/설정은 손대지 않음.
 - **안전 실패**: 볼트/대상 폴더가 없으면 쓰지 않고 에러로 중단.
-- **수동**: 자동 트리거 아님. 사용자/오케스트레이터가 명시적으로 호출(지침 Lifecycle 10번).
+- **트리거**: task `done` 시 지침 Lifecycle 10번이 **자동 기본**(fail-open — export 실패는 task 완료를
+  막지 않고 사용자에게 보고만 한다). 수동 호출(`/export` 스킬·직접 실행)은 재전송·배치(`--all`)·
+  옵션 지정(`--media`·`--domain`)을 위한 **보조 경로**다.

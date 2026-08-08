@@ -7,6 +7,7 @@ Claude Code를 오케스트레이터로 두고 Claude·Codex·Gemini를 워커�
 - **Orchestrator = Claude Code 세션** (이 폴더 안에서 실행 시 `CLAUDE.md` 자동 적용)
 - **Workers** = 외부 모델 호출. 모두 승인 게이트 통과 필요.
   - `claude-main` — [strategist] 기획·설계·아키텍처·전략·디자인 방향·문체 글쓰기
+    (워커 핀이 Orchestrator와 같은 모델인 동안 **기본은 Orchestrator 직접 처리** — 컨텍스트 격리·독립 2차 패스가 필요할 때만 호출)
   - `codex-main` — [engineer·computer-use] 대규모 구현·테스트·로컬 검증·브라우저 자동화·이미지 생성
   - `codex-critic` — [reviewer] 산출물 리뷰·비평 (Codex의 주된 역할)
   - `gemini` — [multimodal] 이미지·긴 문서·제3자 시각의 검토

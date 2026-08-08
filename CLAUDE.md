@@ -6,6 +6,7 @@
 Orchestrator (Claude Code session, internal reasoning)
 └── Worker Pool (모두 외부 호출 — 승인 필요)
     ├── claude-main    [strategist] 기획 · 설계 · 아키텍처 · 전략 · 디자인 방향 · 문체 글쓰기 · 디버깅 원인 분석
+    │                  ※ strategist 기본은 Orchestrator 직접 처리 — 컨텍스트 격리·독립 2차 패스가 필요할 때만 호출
     ├── codex-main     [engineer·computer-use] 대규모 구현 · 코드 분석 · 테스트 · diff · 로컬 검증 · 브라우저 자동화 · 이미지 생성
     ├── codex-critic   [reviewer] 산출물 리뷰·비평 (Codex의 주된 역할)
     └── gemini         [multimodal] 멀티모달 · 긴 문서 · 제3자 시각의 검토
@@ -13,7 +14,7 @@ Orchestrator (Claude Code session, internal reasoning)
 
 능력 슬롯 → 워커 배정의 정본은 `_shared/capability-profile.md`(가변층 — 신모델 출시 시 프로필만 갱신).
 
-**중요**: Orchestrator의 내부 추론은 worker가 아님. claude-main worker 호출은 별도 모델 호출이므로 승인·쿼터 대상.
+**중요**: Orchestrator의 내부 추론은 worker가 아님. claude-main worker 호출은 별도 모델 호출이므로 승인·쿼터 대상. **워커 핀이 Orchestrator와 동일 모델인 동안** strategist 슬롯의 기본은 Orchestrator 직접 처리다(2026-08-09 결정) — claude-main은 컨텍스트 격리·독립 2차 패스가 필요할 때만 부르고 근거를 `task.md`에 남긴다.
 
 ### 모델 정책 — 모든 워커는 최상위 모델을 쓴다
 
@@ -119,6 +120,7 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 7. `result.md`의 Verification Checklist 실행
 8. 검증 결과를 `log.md`에 append (`[VERIFICATION]` 태그). 작업이 끝나면 `task.md`의 `status`를 `done`으로 갱신
 9. 완료 후 교훈 추가 (분류): **시스템 운영 자체**에 대한 일반 교훈 → `_shared/learnings.md`(추적·공개). **특정 외부 프로젝트 한정**(mat·hwpx 등) → `_local/learnings.md`(git 추적 안 함, 없으면 생성). `_local/learnings.md`는 명시 요청 없이는 로드하지 않는다. learnings.md가 20KB를 넘으면 통합 패스 수행(기준: `_shared/learnings.md` 헤더).
+10. **볼트 자동 export**: task가 `done`이 되면 `_shared/adapters/export_to_vault.sh <task-name>`을 실행해 볼트로 export한다. 성공 시 `log.md`에 `[DECISION] 볼트 export: <inbox 경로>` append. 볼트가 없거나 스크립트가 비0 종료하면 **건너뛰고 그 사실만 사용자에게 보고**한다 — fail-open(export 실패가 task 완료를 막지 않는다). 수동 재실행·옵션(`--all`·`--dry-run`·`--media`·`--domain`)은 `_shared/vault-bridge.md` 참조.
 
 > **기존 작업 재개 시**(새 세션 포함)는 1번부터가 아니라 `_shared/orchestrator-rules.md` §3 **재진입 프로토콜**을 먼저 따른다 (재정박 → 분기 → 에러 후 진행).
 

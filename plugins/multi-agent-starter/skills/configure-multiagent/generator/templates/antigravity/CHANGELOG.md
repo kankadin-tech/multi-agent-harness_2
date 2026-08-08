@@ -2,6 +2,16 @@
 
 이 파일은 multi-agent-starter (Antigravity flavor) orchestration 시스템의 주요 변경을 기록한다.
 
+## [0.6.0] - 2026-08-09
+
+### Added
+- **task 완료 시 볼트 자동 export** — Task Lifecycle 10번 신설. task가 `done`이 되면
+  `_shared/adapters/export_to_vault.sh <task>`가 돌고, 성공 시 `log.md`에
+  `[DECISION] 볼트 export: <inbox 경로>`가 남는다. 볼트가 없거나 스크립트가 비0으로 끝나면
+  건너뛰고 그 사실만 사용자에게 보고한다 — **fail-open**이라 export 실패가 task 완료를 막지 않는다.
+  수동 호출은 재전송·배치(`--all`)·옵션(`--media`·`--domain`)용 보조 경로로 남는다.
+  (`_shared/vault-bridge.md`)
+
 ## [0.5.0] - 2026-08-01
 
 ### Fixed
